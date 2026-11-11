@@ -765,4 +765,87 @@ describe("NewComponentModal", () => {
       expect(wrapper.vm.selected_project_id).toBeNull();
     });
   });
+
+  // ==========================================
+  // DUPLICATE FLOW INHERITS THE SOURCE SRG
+  //
+  // REQUIREMENT: Duplicating a component inherits the source component's SRG
+  // (passed as predetermined_security_requirements_guide_id); the user is NOT
+  // asked to pick one. The SourceSrgPicker — and its sourceSelection watcher —
+  // belong to the create-new picker flow only (profilePickerMode). In the
+  // duplicate/copy/spreadsheet flows the watcher must NOT mirror the (empty)
+  // picker selection into security_requirements_guide_id, or showModal's reset
+  // of sourceSelection to {primaryId: null} silently clobbers the inherited SRG
+  // and the "Please select an SRG" guard wrongly blocks submit.
+  // ==========================================
+  describe("duplicate flow inherits the source SRG (watcher must not clobber it)", () => {
+    it("retains the predetermined SRG after showModal despite the sourceSelection reset", async () => {
+      wrapper = createWrapper({
+        component_to_duplicate: 7,
+        predetermined_security_requirements_guide_id: 42,
+      });
+
+      wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
+      wrapper.vm.showModal();
+      // Flush the deep sourceSelection watcher scheduled by showModal's reset.
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.security_requirements_guide_id).toBe(42);
+    });
+
+    it("does not block submit with 'Please select an SRG' in the duplicate flow", async () => {
+      wrapper = createWrapper({
+        component_to_duplicate: 7,
+        predetermined_security_requirements_guide_id: 42,
+      });
+      const toastSpy = vi.spyOn(wrapper.vm.$bvToast, "toast").mockImplementation(() => {});
+
+      wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
+      wrapper.vm.showModal();
+      await wrapper.vm.$nextTick();
+      wrapper.vm.name = "Duplicated Component";
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      expect(toastSpy).not.toHaveBeenCalledWith("Please select an SRG", expect.anything());
+    });
+
+    it("still mirrors the picker selection into the SRG id in the create-new flow", async () => {
+      wrapper = createWrapper();
+
+      wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
+      wrapper.vm.showModal();
+      await wrapper.vm.$nextTick();
+
+      // profilePickerMode is true for the create-new flow; the picker drives
+      // the SRG id via sourceSelection.
+      wrapper.vm.sourceSelection = { sourceIds: [9], primaryId: 9 };
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.security_requirements_guide_id).toBe(9);
+    });
+
+    // Copy flow: selecting a source component must not throw when its SRG is
+    // not (yet) in the loaded srgs list — the display name falls back to "".
+    it("setSelectedComponent does not throw when the source SRG is absent from the list", () => {
+      wrapper = createWrapper({ copy_component: true });
+      wrapper.vm.srgs = []; // list not populated
+
+      expect(() =>
+        wrapper.vm.setSelectedComponent({
+          id: 3,
+          security_requirements_guide_id: 99,
+          name: "Src",
+          version: "1",
+          release: "1",
+          prefix: "SRC-01",
+          title: "Src",
+          description: "",
+          based_on_title: "Some SRG",
+        }),
+      ).not.toThrow();
+
+      expect(wrapper.vm.security_requirements_guide_id).toBe(99);
+      expect(wrapper.vm.security_requirements_guide_displayed).toBe("");
+    });
+  });
 });

@@ -374,6 +374,14 @@ export default {
     sourceSelection: {
       deep: true,
       handler: function (selection) {
+        // The SourceSrgPicker (and this mirror) exist only in the create-new
+        // picker flow. In the duplicate/copy/spreadsheet flows the SRG is
+        // inherited (predetermined / detected / from the source component), so
+        // mirroring the empty picker selection here would clobber it — e.g.
+        // showModal's reset of sourceSelection to {primaryId: null} would wipe
+        // a duplicate's inherited SRG and trip the "Please select an SRG" guard.
+        if (!this.profilePickerMode) return;
+
         this.security_requirements_guide_id = selection.primaryId;
       },
     },
@@ -457,9 +465,13 @@ export default {
       if (!component) return;
       this.selected_component_id = component.id;
       this.security_requirements_guide_id = component.security_requirements_guide_id;
-      this.security_requirements_guide_displayed = this.srgs.find(
+      // The source component's SRG is normally in the loaded list, but guard
+      // against a missing match (e.g. the list not yet fetched) so selecting a
+      // component to copy can never throw on `.displayed`.
+      const sourceSrg = this.srgs.find(
         (srg) => srg.id === component.security_requirements_guide_id,
-      ).displayed;
+      );
+      this.security_requirements_guide_displayed = sourceSrg ? sourceSrg.displayed : "";
       this.name = component.name;
       this.version = component.version;
       this.release = component.release;
