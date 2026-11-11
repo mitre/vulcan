@@ -34,9 +34,9 @@ class TimeoutParser
     return DEFAULT_TIMEOUT if raw.empty? || raw == '0'
 
     case raw
-    when /\A(\d+)h\z/i  then Regexp.last_match(1).to_i * 3600
-    when /\A(\d+)m\z/i  then Regexp.last_match(1).to_i * 60
-    when /\A(\d+)s\z/i  then Regexp.last_match(1).to_i
+    when /\A(\d+)h\z/i then Regexp.last_match(1).to_i * 3600
+    when /\A(\d+)m\z/i then Regexp.last_match(1).to_i * 60
+    when /\A(\d+)s\z/i then Regexp.last_match(1).to_i
     when /\A(\d+)\z/
       n = Regexp.last_match(1).to_i
       if n <= HOURS_MAX

@@ -78,3 +78,38 @@ if (typeof Range !== "undefined") {
     });
   }
 }
+
+// jsdom has no media queries or layout observation. Monaco reads
+// window.matchMedia at editor creation (high-contrast and reduced-motion
+// detection) and observes its container with ResizeObserver. Stub both so the
+// real editor can be created for MonacoEditor.integration.spec.js; the model
+// and undo machinery under test do not depend on either.
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  window.matchMedia = (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent() {
+      return false;
+    },
+  });
+}
+if (typeof globalThis.ResizeObserver !== "function") {
+  globalThis.ResizeObserver = class {
+    observe() {
+      // jsdom does no layout, so there is never a resize to report.
+    }
+
+    unobserve() {
+      // Nothing is observed (see observe), so there is nothing to stop.
+    }
+
+    disconnect() {
+      // Nothing is observed (see observe), so there is nothing to release.
+    }
+  };
+}

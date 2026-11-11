@@ -17,7 +17,7 @@ RSpec.describe 'upload validation coverage' do
 
     expect(before_action_line).not_to be_nil,
                                       'validate_component_upload before_action not found'
-    expect(before_action_line).to match(/detect_srg/),
+    expect(before_action_line).to include('detect_srg'),
                                   'detect_srg must be in validate_component_upload only: list'
   end
 end

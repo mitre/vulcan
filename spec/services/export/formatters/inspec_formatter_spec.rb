@@ -85,7 +85,7 @@ RSpec.describe Export::Formatters::InspecFormatter do
       expect(parsed['license']).to eq('Apache-2.0')
       expect(parsed['summary']).to be_a(String)
       expect(parsed['version']).to match(/\A\d+\.\d+\.\d+\z/) # semver format
-      expect(parsed['inspec_version']).to match(/>=/)
+      expect(parsed['inspec_version']).to include('>=')
     end
 
     it 'inspec.yml includes copyright_email when admin_email is present' do

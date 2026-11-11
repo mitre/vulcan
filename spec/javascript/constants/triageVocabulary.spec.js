@@ -130,9 +130,8 @@ describe("triageVocabulary", () => {
   });
 
   it("addressed_by labels carry the kind-keyed entity noun", async () => {
-    const { triageLabel, triageDisaLabel, triageTooltip } = await import(
-      "@/constants/triageVocabulary"
-    );
+    const { triageLabel, triageDisaLabel, triageTooltip } =
+      await import("@/constants/triageVocabulary");
     expect(triageLabel("addressed_by", "srg")).toBe("Addressed by Other Requirement");
     expect(triageLabel("addressed_by", "stig")).toBe("Addressed by Other Rule");
     expect(triageLabel("addressed_by")).toBe("Addressed by Other Rule");

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module SeedHelpers # rubocop:disable Style/Documentation
   DEMO_PASSWORD = ENV.fetch('VULCAN_SEED_ADMIN_PASSWORD', '12qwaszx!@QWASZX')
   DEMO_EMAILS = %w[admin@example.com viewer@example.com author@example.com reviewer@example.com
@@ -300,4 +300,3 @@ module SeedHelpers # rubocop:disable Style/Documentation
     errors
   end
 end
-# rubocop:enable Metrics/ModuleLength

@@ -41,7 +41,7 @@ RSpec.describe 'docs:build' do
       described_class.build!
 
       expect(calls.pluck(:command))
-        .to eq(['yarn openapi:docs', 'yarn install --frozen-lockfile', 'yarn build'])
+        .to eq(['yarn openapi:docs', 'yarn install --immutable', 'yarn build'])
     end
 
     # The site configuration hard-imports the bundled OpenAPI description, which
@@ -96,7 +96,7 @@ RSpec.describe 'docs:build' do
     end
 
     it 'raises when the dependency install exits non-zero' do
-      stub_build(failing: 'yarn install --frozen-lockfile')
+      stub_build(failing: 'yarn install --immutable')
 
       expect { described_class.build! }
         .to raise_error(DocsSite::BuildError, /yarn install/)

@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount, mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import NewComponentModal from "@/components/components/NewComponentModal.vue";
 import { detectSrg, createComponentInProject } from "@/api/componentsApi";
+import { getSrgs, getProjects, getProject } from "@/api/projectsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -763,6 +764,34 @@ describe("NewComponentModal", () => {
     it("defaults selected_project_id to null when project_id not provided", () => {
       wrapper = createWrapper({ project_id: undefined });
       expect(wrapper.vm.selected_project_id).toBeNull();
+    });
+  });
+
+  describe("load failures", () => {
+    const errorToast = (message) => ({ title: "Error", variant: "danger", message });
+
+    it.each([
+      ["SRG list", getSrgs],
+      ["project list", getProjects],
+    ])("fetchData reports a failed %s request as an error toast", async (_name, api) => {
+      wrapper = createWrapper();
+      api.mockRejectedValueOnce(new Error("Service unavailable"));
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.fetchData(), wrapper);
+
+      expect(toastDetail).toEqual(errorToast("Service unavailable"));
+    });
+
+    it("setSelectedProject reports a failed project request as an error toast", async () => {
+      wrapper = createWrapper();
+      getProject.mockRejectedValueOnce(new Error("Project unavailable"));
+
+      const toastDetail = await captureVulcanToast(
+        () => wrapper.vm.setSelectedProject({ id: 99 }),
+        wrapper,
+      );
+
+      expect(toastDetail).toEqual(errorToast("Project unavailable"));
     });
   });
 });

@@ -181,6 +181,83 @@ describe("useRelocations", () => {
     expect(getRelocations).not.toHaveBeenCalled();
   });
 
+  // REQUIREMENT (loading an SRG component): markers and destinations are
+  // independent requests loaded together. Both are requested even when one
+  // fails, both land when they succeed, and every failure is reported once
+  // to the caller's error handler so the user sees a toast per failed load.
+  describe("fetchAll", () => {
+    it("loads markers and destinations together", async () => {
+      getRelocations.mockResolvedValue({ data: MARKERS });
+      getRelocationDestinations.mockResolvedValue({
+        data: [{ token: "CTR", name: "Container SRG" }],
+      });
+      const onError = vi.fn();
+      const { markers, destinations, fetchAll } = useRelocations({ id: 5, prefix: "CNTR-00" });
+
+      await fetchAll(onError);
+
+      expect(markers.value).toHaveLength(MARKERS.length);
+      expect(destinations.value).toHaveLength(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("requests both before either answers, so neither waits on the other", async () => {
+      let resolveMarkers;
+      let resolveDestinations;
+      getRelocations.mockReturnValue(new Promise((resolve) => (resolveMarkers = resolve)));
+      getRelocationDestinations.mockReturnValue(
+        new Promise((resolve) => (resolveDestinations = resolve)),
+      );
+      const onError = vi.fn();
+      const { markers, destinations, fetchAll } = useRelocations({ id: 5, prefix: "CNTR-00" });
+
+      const loading = fetchAll(onError);
+      await Promise.resolve();
+
+      expect(getRelocations).toHaveBeenCalledTimes(1);
+      expect(getRelocationDestinations).toHaveBeenCalledTimes(1);
+
+      resolveDestinations({ data: [{ token: "CTR", name: "Container SRG" }] });
+      resolveMarkers({ data: MARKERS });
+      await loading;
+
+      expect(markers.value).toHaveLength(MARKERS.length);
+      expect(destinations.value).toHaveLength(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("still loads destinations when the marker request fails, and reports it", async () => {
+      const failure = new Error("markers unavailable");
+      getRelocations.mockRejectedValue(failure);
+      getRelocationDestinations.mockResolvedValue({
+        data: [{ token: "CTR", name: "Container SRG" }],
+      });
+      const onError = vi.fn();
+      const { destinations, fetchAll } = useRelocations({ id: 5, prefix: "CNTR-00" });
+
+      await fetchAll(onError);
+
+      expect(destinations.value).toHaveLength(1);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(failure);
+    });
+
+    it("reports each failure when both requests fail", async () => {
+      const markerFailure = new Error("markers unavailable");
+      const destinationFailure = new Error("destinations unavailable");
+      getRelocations.mockRejectedValue(markerFailure);
+      getRelocationDestinations.mockRejectedValue(destinationFailure);
+      const onError = vi.fn();
+      const { fetchAll } = useRelocations({ id: 5, prefix: "CNTR-00" });
+
+      await fetchAll(onError);
+
+      expect(onError).toHaveBeenCalledTimes(2);
+      expect(onError).toHaveBeenCalledWith(markerFailure);
+      expect(onError).toHaveBeenCalledWith(destinationFailure);
+    });
+  });
+
   // REQUIREMENT (one destination vocabulary): the labelled destination
   // list exists exactly once. Endpoint rows are labelled by SRG name
   // (released rows carry the next-release suffix); marker abbreviations

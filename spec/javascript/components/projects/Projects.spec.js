@@ -159,6 +159,19 @@ describe("Projects", () => {
 
       expect(spy).toHaveBeenCalled();
     });
+
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it("onProjectCreated resolves once the refreshed list is in place", async () => {
+      const { getProjects } = await import("@/api/projectsApi");
+      getProjects.mockReturnValueOnce(later({ data: [{ id: 9, name: "Created" }] }));
+      wrapper = createWrapper();
+
+      await wrapper.vm.onProjectCreated();
+
+      expect(wrapper.vm.projectlist).toEqual([{ id: 9, name: "Created" }]);
+    });
   });
 
   // ==========================================

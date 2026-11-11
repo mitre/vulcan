@@ -48,6 +48,13 @@ nginx.conf
 /yarn-error.log
 yarn-debug.log*
 .yarn-integrity
+# Yarn 4 per-install state and caches (root and docs/); mise installs Yarn
+# itself, so no release is committed under .yarn/.
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/sdks
+!**/.yarn/versions
 
 # Ignore generated assets
 
@@ -88,6 +95,9 @@ AGENT-STATUS/
 .dolt/
 *.db
 .beads-credential-key
+.beads/proxieddb/
+# Workspace gate file bd writes beside .beads/
+*.gate.lock*
 # Beads auto-exports to issues.jsonl on each bd write.
 # The .beads/ copy is tracked for team visibility.
 issues.jsonl

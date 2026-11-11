@@ -66,7 +66,6 @@ export default {
     is_vulcan_admin: {
       type: Boolean,
       required: true,
-      default: false,
     },
     can_create_project: {
       type: Boolean,
@@ -99,16 +98,17 @@ export default {
     openRestoreProjectModal() {
       this.$refs.restoreProjectModal.showModal();
     },
-    onProjectCreated() {
+    async onProjectCreated() {
       this.showNewProjectModal = false;
-      this.refreshProjects();
+      await this.refreshProjects();
     },
-    refreshProjects: function () {
-      getProjects()
-        .then((response) => {
-          this.projectlist = response.data;
-        })
-        .catch(this.alertOrNotifyResponse);
+    refreshProjects: async function () {
+      try {
+        const response = await getProjects();
+        this.projectlist = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };

@@ -57,7 +57,8 @@ Vulcan helps security teams create STIG-ready security guidance documentation. U
 
 ## Tech Stack
 
-- **Backend**: Ruby 3.4.10, Rails 8.1.3.1, PostgreSQL 18
+- **Backend**: Ruby 3.4.12, Rails 8.1.4.1, PostgreSQL 18
+- **Toolchain**: mise installs Ruby, Node.js and Yarn 4 from `mise.lock` (`mise install`); see docs/site/development/setup.md
 - **Frontend**: Vue 2.7.16 (14 separate instances), Bootstrap 4.6.2, Bootstrap-Vue 2.23.1
 - **Navigation**: Turbolinks 5.2.0 with vue-turbolinks adapter
 - **Build**: esbuild via jsbundling-rails, Propshaft asset pipeline
@@ -123,7 +124,17 @@ bundle exec rake upgrade:auto                  # Preflight + fix in one shot (us
 yarn docs:dev                                  # Start VitePress dev server (hot reload)
 yarn docs:build                                # Build static site to docs/.vitepress/dist/
 yarn docs:preview                              # Preview production build locally
+
+# SonarCloud (official `sonar` CLI, Homebrew cask sonarqube-cli; run `sonar auth login` once in a terminal)
+sonar qg status --pull-request <n>             # Quality gate for a PR (--all, --top N)
+sonar list issues --pull-request <n>           # Open issues on a PR (--new-code, --file <path>, --format json)
+sonar api get '/api/rules/show?key=<rule>&organization=mitre'  # A rule's "how to fix" text
 ```
+
+### Unknowns and External Tools
+
+- Two failed attempts at the same question is the limit, however the method changes (an API, then a web page, then a source repository is three attempts at one question). After the second, stop and ask the maintainer, with what was tried.
+- Before working around a tool (anonymous API calls, scraped pages, hand-written parsers), check for the vendor's official CLI. For SonarCloud that is `sonar` above; anonymous Web API calls do not return rule text.
 
 ---
 

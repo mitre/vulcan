@@ -218,9 +218,8 @@ class Rule < BaseRule
       end
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
-    # rubocop:disable Rails/SkipsModelValidations -- derived column, bypass callbacks to avoid recursion
+    # rubocop:disable-next Rails/SkipsModelValidations -- derived column, bypass callbacks to avoid recursion
     update_column(:inspec_control_file, control.to_ruby)
-    # rubocop:enable Rails/SkipsModelValidations
   end
 
   def basic_fields
@@ -354,9 +353,8 @@ class Rule < BaseRule
   def seed_inspec_control_body
     return if inspec_control_body.present?
 
-    # rubocop:disable Rails/SkipsModelValidations -- avoid retriggering callbacks on create
+    # rubocop:disable-next Rails/SkipsModelValidations -- avoid retriggering callbacks on create
     update_column(:inspec_control_body, INSPEC_STUB_BODY)
-    # rubocop:enable Rails/SkipsModelValidations
   end
 
   ##

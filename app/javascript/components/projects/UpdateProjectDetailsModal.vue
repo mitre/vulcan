@@ -83,11 +83,17 @@ export default {
     showModal: function () {
       this.$refs["updateProjectDetailsModal"].show();
     },
-    updateProjectDetails: function () {
+    updateProjectDetails: async function () {
       this.$refs["updateProjectDetailsModal"].hide();
-      updateProject(this.project.id, { name: this["name"], description: this["description"] })
-        .then(this.editProjectSuccess)
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateProject(this.project.id, {
+          name: this["name"],
+          description: this["description"],
+        });
+        this.editProjectSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     editProjectSuccess: function (response) {
       this.alertOrNotifyResponse(response);

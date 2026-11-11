@@ -15,7 +15,7 @@
 // We use VULCAN_RUBY_VERSION to avoid this conflict. If a prefixed value leaks into
 // the build, you may see an invalid Ruby source download URL or a failure to fetch
 // the Ruby tarball. Either:
-//   - Set VULCAN_RUBY_VERSION=3.4.10, or
+//   - Set VULCAN_RUBY_VERSION=3.4.12, or
 //   - Run: unset RUBY_VERSION && docker buildx bake
 // The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source based on the var.
 
@@ -35,16 +35,12 @@ variable "TAG_SUFFIXES" {
   default = "latest"
 }
 
-variable "VULCAN_BUNDLER_VERSION" {
-  default = "2.7.2"
-}
-
 variable "VULCAN_RUBY_VERSION" {
-  default = "3.4.10"
+  default = "3.4.12"
 }
 
 variable "VULCAN_NODE_VERSION" {
-  default = "24.18.0"
+  default = "24.22.2"
 }
 
 // ============================================================================
@@ -76,7 +72,6 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
-    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
     RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
@@ -87,7 +82,7 @@ target "production" {
     "org.opencontainers.image.vendor"      = "MITRE"
     "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
     "org.opencontainers.image.version"     = "${VERSION}"
-    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.7"
+    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.8"
   }
 
   // Build cache configuration (only for CI/registry push)

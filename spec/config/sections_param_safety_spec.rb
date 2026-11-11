@@ -14,14 +14,14 @@ RSpec.describe 'sections param type safety' do
 
   describe 'rules_controller bulk_section_locks' do
     it 'coerces params[:sections] to Array' do
-      expect(rules_controller).to match(/Array\(params\[:sections\]\)/),
+      expect(rules_controller).to include('Array(params[:sections])'),
                                   'bulk_section_locks must use Array(params[:sections]) to prevent string subtraction bypass'
     end
   end
 
   describe 'reviews_controller lock_sections' do
     it 'coerces params[:sections] to Array' do
-      expect(reviews_controller).to match(/Array\(params\[:sections\]\)/),
+      expect(reviews_controller).to include('Array(params[:sections])'),
                                     'lock_sections must use Array(params[:sections]) to prevent string subtraction bypass'
     end
   end

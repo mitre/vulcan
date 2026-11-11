@@ -118,7 +118,7 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
       body = validate_and_parse!(expected_status: :bad_request)
 
       expect(body['type']).to eq('/docs/api/errors#page_out_of_range')
-      expect(body['detail']).to match(/out of range/)
+      expect(body['detail']).to include('out of range')
     end
 
     it 'matches the documented 401 shape when unauthenticated' do
