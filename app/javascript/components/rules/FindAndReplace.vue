@@ -318,16 +318,4 @@ export default {
   font-size: 12px;
   cursor: pointer;
 }
-
-@media (min-width: 992px) {
-  .modal-xl {
-    max-width: auto !important;
-  }
-}
-
-@media (min-width: 576px) {
-  .modal-dialog {
-    max-width: auto !important;
-  }
-}
 </style>
