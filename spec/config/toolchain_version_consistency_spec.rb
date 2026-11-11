@@ -3,6 +3,8 @@
 require 'rails_helper'
 require 'tomlrb'
 require 'open3'
+require 'tmpdir'
+require 'fileutils'
 
 ##
 # One toolchain, pinned once.
@@ -149,9 +151,9 @@ RSpec.describe 'Toolchain version consistency' do
 
     # The binstub is itself named yarn, so with bin/ first on PATH a bare
     # `exec "yarn"` would find and re-run itself forever.
-    def run_binstub(path)
+    def run_binstub(path, *)
       binstub = Rails.root.join('bin/yarn').to_s
-      Open3.popen2e({ 'PATH' => path }, binstub, '--version') do |_stdin, output, wait|
+      Open3.popen2e({ 'PATH' => path }, binstub, *) do |_stdin, output, wait|
         unless wait.join(30)
           Process.kill('KILL', wait.pid)
           return ['bin/yarn did not finish within 30 seconds', nil]
@@ -161,15 +163,29 @@ RSpec.describe 'Toolchain version consistency' do
     end
 
     it 'runs through the bin/yarn binstub' do
-      output, status = run_binstub(ENV.fetch('PATH'))
+      output, status = run_binstub(ENV.fetch('PATH'), '--version')
       expect(status).to be_success, output
       expect(output.strip).to eq(version)
     end
 
     it 'runs through the bin/yarn binstub when bin/ leads PATH' do
-      output, status = run_binstub([Rails.root.join('bin').to_s, ENV.fetch('PATH')].join(File::PATH_SEPARATOR))
+      output, status = run_binstub([Rails.root.join('bin').to_s, ENV.fetch('PATH')].join(File::PATH_SEPARATOR),
+                                   '--version')
       expect(status).to be_success, output
       expect(output.strip).to eq(version)
+    end
+
+    it 'runs a yarn whose path contains spaces, with no arguments' do
+      Dir.mktmpdir do |root|
+        dir = File.join(root, 'tools with spaces')
+        FileUtils.mkdir_p(dir)
+        fake = File.join(dir, 'yarn')
+        File.write(fake, "#!/bin/sh\necho \"fake yarn: $#\"\n")
+        File.chmod(0o755, fake)
+        output, status = run_binstub([dir, ENV.fetch('PATH')].join(File::PATH_SEPARATOR))
+        expect(status).to be_success, output
+        expect(output.strip).to eq('fake yarn: 0')
+      end
     end
 
     it 'is not fetched unverified through corepack' do

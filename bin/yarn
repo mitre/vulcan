@@ -16,4 +16,6 @@ unless yarn
   exit 1
 end
 
-Dir.chdir(APP_ROOT) { exec yarn, *ARGV }
+# The [path, argv0] form runs the file directly even with no arguments, when a
+# plain string would go through the shell and split a path containing spaces.
+Dir.chdir(APP_ROOT) { exec [yarn, yarn], *ARGV }
