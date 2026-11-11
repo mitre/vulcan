@@ -188,6 +188,15 @@ RSpec.describe 'Toolchain version consistency' do
       end
     end
 
+    # Third-party install scripts are off. vue-demi's is the one allowed: it
+    # switches vue-demi to its Vue 2 build, without which Pinia and the asset
+    # build fail. Allowing another package's script is a reviewed change here.
+    it 'runs no third-party install script except the allowlisted ones' do
+      expect(YAML.safe_load_file(Rails.root.join('.yarnrc.yml'))['enableScripts']).to be(false)
+      built = package_json.fetch('dependenciesMeta', {}).select { |_name, meta| meta['built'] }.keys
+      expect(built).to eq(['vue-demi'])
+    end
+
     it 'is not fetched unverified through corepack' do
       expect(dockerfile).not_to match(/^\s*[^#\n]*\bcorepack\b/)
     end
