@@ -1,11 +1,19 @@
 #!/usr/bin/env ruby
 APP_ROOT = File.expand_path('..', __dir__)
-Dir.chdir(APP_ROOT) do
-  begin
-    exec "yarn", *ARGV
-  rescue Errno::ENOENT
-    $stderr.puts "Yarn executable was not detected in the system."
-    $stderr.puts "Run `mise install` to install the Yarn release package.json names."
-    exit 1
-  end
+
+# This binstub is itself named yarn, so it looks for the first yarn on PATH
+# that is not this file; a bare `exec "yarn"` would re-run it forever when
+# bin/ comes first on PATH.
+SELF = File.realpath(__FILE__)
+yarn = ENV.fetch('PATH', '').split(File::PATH_SEPARATOR).filter_map do |dir|
+  candidate = File.join(File.expand_path(dir, APP_ROOT), 'yarn')
+  candidate if File.file?(candidate) && File.executable?(candidate) && File.realpath(candidate) != SELF
+end.first
+
+unless yarn
+  warn 'Yarn executable was not detected in the system.'
+  warn 'Run `mise install` to install the Yarn release package.json names.'
+  exit 1
 end
+
+Dir.chdir(APP_ROOT) { exec yarn, *ARGV }

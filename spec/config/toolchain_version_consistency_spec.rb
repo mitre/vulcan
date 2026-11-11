@@ -147,8 +147,27 @@ RSpec.describe 'Toolchain version consistency' do
       expect(Rails.root.join('Dockerfile').read.scan(/^ARG (YARN_\w*)/).flatten).to be_empty
     end
 
+    # The binstub is itself named yarn, so with bin/ first on PATH a bare
+    # `exec "yarn"` would find and re-run itself forever.
+    def run_binstub(path)
+      binstub = Rails.root.join('bin/yarn').to_s
+      Open3.popen2e({ 'PATH' => path }, binstub, '--version') do |_stdin, output, wait|
+        unless wait.join(30)
+          Process.kill('KILL', wait.pid)
+          return ['bin/yarn did not finish within 30 seconds', nil]
+        end
+        [output.read, wait.value]
+      end
+    end
+
     it 'runs through the bin/yarn binstub' do
-      output, status = Open3.capture2e(Rails.root.join('bin/yarn').to_s, '--version')
+      output, status = run_binstub(ENV.fetch('PATH'))
+      expect(status).to be_success, output
+      expect(output.strip).to eq(version)
+    end
+
+    it 'runs through the bin/yarn binstub when bin/ leads PATH' do
+      output, status = run_binstub([Rails.root.join('bin').to_s, ENV.fetch('PATH')].join(File::PATH_SEPARATOR))
       expect(status).to be_success, output
       expect(output.strip).to eq(version)
     end
