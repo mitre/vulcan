@@ -2,6 +2,7 @@
 
 require 'rails_helper'
 require 'tomlrb'
+require 'open3'
 
 ##
 # One toolchain, pinned once.
@@ -55,6 +56,15 @@ RSpec.describe 'Toolchain version consistency' do
 
   def package_json
     @package_json ||= JSON.parse(Rails.root.join('package.json').read)
+  end
+
+  describe 'mise' do
+    it 'is the release CI installs, which mise.toml requires' do
+      min_version = Tomlrb.load_file(Rails.root.join('mise.toml').to_s).fetch('min_version')
+      action = YAML.safe_load_file(Rails.root.join('.github/actions/setup-toolchain/action.yml'))
+      mise_step = action.dig('runs', 'steps').find { |step| step['uses'].to_s.start_with?('jdx/mise-action@') }
+      expect(mise_step.dig('with', 'version').to_s).to eq(min_version)
+    end
   end
 
   describe 'Ruby' do
@@ -122,10 +132,12 @@ RSpec.describe 'Toolchain version consistency' do
     end
 
     it 'is the release the image installs, verified against mise.lock' do
-      locked = locked_platform('yarn', 'linux-x64')
-      expect(locked['url']).to eq("https://repo.yarnpkg.com/#{version}/packages/yarnpkg-cli/bin/yarn.js")
       expect(dockerfile_args['YARNPKG_VERSION']).to eq(version)
-      expect(dockerfile_args['YARNPKG_SHA256']).to eq(sha256(locked))
+      %w[linux-x64 linux-arm64].each do |platform|
+        locked = locked_platform('yarn', platform)
+        expect(locked['url']).to eq("https://repo.yarnpkg.com/#{version}/packages/yarnpkg-cli/bin/yarn.js")
+        expect(dockerfile_args['YARNPKG_SHA256']).to eq(sha256(locked)), "YARNPKG_SHA256 does not match #{platform}"
+      end
     end
 
     # Yarn reads every YARN_* environment variable as a setting and refuses to
@@ -133,6 +145,12 @@ RSpec.describe 'Toolchain version consistency' do
     # every RUN in their stage and the stages built from it.
     it 'declares no build argument Yarn would read as a setting' do
       expect(Rails.root.join('Dockerfile').read.scan(/^ARG (YARN_\w*)/).flatten).to be_empty
+    end
+
+    it 'runs through the bin/yarn binstub' do
+      output, status = Open3.capture2e(Rails.root.join('bin/yarn').to_s, '--version')
+      expect(status).to be_success, output
+      expect(output.strip).to eq(version)
     end
 
     it 'is not fetched unverified through corepack' do
