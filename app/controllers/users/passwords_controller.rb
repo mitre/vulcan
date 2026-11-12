@@ -57,20 +57,25 @@ module Users
 
       if resource.errors.empty?
         resource.unlock_access! if unlockable?(resource)
-        if sign_in_after_reset_password?
+        signed_in = sign_in_after_reset_password?
+        if signed_in
           resource.after_database_authentication
-          sign_in(resource_name, resource)
+          # event: :authentication resets the CSRF token, as the form login does.
+          sign_in(resource_name, resource, event: :authentication)
         end
+
+        # Same choice as Devise's PasswordsController#update: "now signed in"
+        # only when the reset signed the user in.
+        message_key = signed_in && resource.active_for_authentication? ? :updated : :updated_not_active
 
         respond_to do |format|
           format.html do
-            flash_message = resource.active_for_authentication? ? :updated : :updated_not_active
-            set_flash_message!(:notice, flash_message)
+            set_flash_message!(:notice, message_key)
             redirect_to after_resetting_password_path_for(resource)
           end
           format.json do
             render_toast(title: 'Password reset.',
-                         message: 'Your password has been changed successfully. You are now signed in.',
+                         message: find_message(message_key),
                          variant: 'success', status: :ok)
           end
         end

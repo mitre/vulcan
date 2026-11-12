@@ -116,6 +116,29 @@ RSpec.describe 'User Registrations' do
       follow_redirect!
       expect(response.body).to include(I18n.t('devise.registrations.signed_up'))
     end
+
+    it 'rotates the session CSRF token when sign-up signs the new user in' do
+      get '/api/auth/csrf', as: :json
+      pre_sign_up_token = session[:_csrf_token]
+      expect(pre_sign_up_token).to be_present
+
+      post '/users', params: {
+        user: {
+          name: user1.name,
+          email: user1.email,
+          password: user1.password,
+          password_confirmation: user1.password
+        }
+      }
+      expect(response).to redirect_to(root_path)
+
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/csrf', as: :json
+      expect(session[:_csrf_token]).to be_present
+      expect(session[:_csrf_token]).not_to eq(pre_sign_up_token)
+    end
   end
 
   context 'empty email', :truncation do

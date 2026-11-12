@@ -44,6 +44,34 @@ tags:
   - name: System
     description: Version and health check endpoints
 paths:
+  /api/auth/csrf:
+    get:
+      operationId: getAuthCsrf
+      tags:
+        - Auth
+      security: []
+      summary: Issue the CSRF token for the current session
+      description: 'Returns the authenticity token bound to the caller''s session, creating a session when none exists. Does not require authentication. A frontend that is not rendered by the server''s HTML layout calls this before its first state-changing request. POST /api/auth/login resets the token and DELETE /api/auth/logout resets the whole session, so call this again after either. Send the value in the X-CSRF-Token header on POST, PUT, PATCH and DELETE requests. The response carries Cache-Control: no-store and must never be cached.'
+      responses:
+        '200':
+          description: Token issued; a session cookie is set when none existed
+          headers:
+            Cache-Control:
+              description: Always no-store. The token is session-bound and must not be cached.
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfTokenResponse'
+              examples:
+                token:
+                  summary: Token for the current session
+                  value:
+                    csrf_token: abc123def456
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /api/auth/me:
     get:
       operationId: getAuthMe
@@ -173,6 +201,8 @@ paths:
                     title: Account locked
                     status: 401
                     detail: This account is temporarily locked due to too many failed sign-in attempts. Please try again later or reset your password.
+        '422':
+          $ref: '#/components/responses/InvalidAuthenticityToken'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/auth/logout:
@@ -7537,6 +7567,17 @@ components:
       scheme: token
       description: 'Personal access token authentication. Send via Authorization header: `Authorization: Token vulcan_xxx`. Tokens are SHA-256 hashed server-side (never stored in plaintext). Scopes: read (GET), write (mutations), admin (everything). Create tokens via Settings → API Tokens in the web UI.'
   schemas:
+    CsrfTokenResponse:
+      description: Authenticity token for the caller's current session, to be sent as X-CSRF-Token on state-changing requests.
+      type: object
+      additionalProperties: false
+      required:
+        - csrf_token
+      properties:
+        csrf_token:
+          type: string
+          description: URL-safe Base64 authenticity token, masked differently on every response, bound to the session cookie that accompanies this response. Reset on POST /api/auth/login; DELETE /api/auth/logout resets the whole session.
+          example: abc123def456
     CurrentUserResponse:
       description: Authenticated user identity for SPA route guards and UI state.
       type: object
@@ -13310,89 +13351,6 @@ components:
         personal_access_token:
           $ref: '#/components/schemas/PersonalAccessTokenSummary'
   responses:
-    Unauthorized:
-      description: Authentication required (RFC 9457 problem details). Either no API token and no signed-in session, or an Authorization header token that is revoked, expired, or mistyped. The `type` URI names which case applied and `how_to_authenticate` spells out both supported methods.
-      content:
-        application/problem+json:
-          schema:
-            type: object
-            additionalProperties: false
-            required:
-              - type
-              - title
-              - status
-              - detail
-            properties:
-              type:
-                type: string
-                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
-                example: /docs/api/errors#not_authenticated
-              title:
-                type: string
-                description: Short human summary of the error class.
-                example: Not authenticated
-              status:
-                type: integer
-                description: HTTP status code, repeated in the body.
-                example: 401
-              detail:
-                type: string
-                description: Occurrence-specific human explanation of why.
-                example: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
-              how_to_authenticate:
-                type: object
-                additionalProperties: false
-                description: Both supported authentication methods (extension member).
-                properties:
-                  session:
-                    type: string
-                    description: How to authenticate with a browser session.
-                    example: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
-                  token:
-                    type: string
-                    description: How to authenticate with a personal access token.
-                    example: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
-          examples:
-            not_authenticated:
-              summary: No API token and no signed-in session
-              value:
-                type: /docs/api/errors#not_authenticated
-                title: Not authenticated
-                status: 401
-                detail: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
-                how_to_authenticate:
-                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
-                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
-            invalid_token:
-              summary: Authorization header token revoked, expired, or mistyped
-              value:
-                type: /docs/api/errors#invalid_token
-                title: Invalid or expired API token
-                status: 401
-                detail: The Authorization header carried a token that does not match any active personal access token. It may be revoked, expired, or mistyped.
-                how_to_authenticate:
-                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
-                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
-            session_superseded:
-              summary: Session ended because the account signed in from another location
-              value:
-                type: /docs/api/errors#session_superseded
-                title: Session ended — signed in elsewhere
-                status: 401
-                detail: You were signed out because this account signed in from another location. Only one active session per account is allowed at a time.
-                how_to_authenticate:
-                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
-                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
-            session_timed_out:
-              summary: Session expired after inactivity
-              value:
-                type: /docs/api/errors#session_timed_out
-                title: Session timed out
-                status: 401
-                detail: Your session timed out after a period of inactivity. Sign in again to continue.
-                how_to_authenticate:
-                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
-                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
     ErrorResponse:
       description: Catch-all 4XX error response. Domain and validation feedback arrives as the canonical toast object (application/json); auth and infrastructure errors (401/403/404/400) arrive as RFC 9457 problem details (application/problem+json) with a stable `type` URI, `title`, `status`, and `detail`.
       content:
@@ -13477,6 +13435,149 @@ components:
                 title: Not found
                 status: 404
                 detail: The requested resource could not be found.
+    Unauthorized:
+      description: Authentication required (RFC 9457 problem details). Either no API token and no signed-in session, or an Authorization header token that is revoked, expired, or mistyped. The `type` URI names which case applied and `how_to_authenticate` spells out both supported methods.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
+                example: /docs/api/errors#not_authenticated
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Not authenticated
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 401
+              detail:
+                type: string
+                description: Occurrence-specific human explanation of why.
+                example: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
+              how_to_authenticate:
+                type: object
+                additionalProperties: false
+                description: Both supported authentication methods (extension member).
+                properties:
+                  session:
+                    type: string
+                    description: How to authenticate with a browser session.
+                    example: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token:
+                    type: string
+                    description: How to authenticate with a personal access token.
+                    example: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+          examples:
+            not_authenticated:
+              summary: No API token and no signed-in session
+              value:
+                type: /docs/api/errors#not_authenticated
+                title: Not authenticated
+                status: 401
+                detail: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            invalid_token:
+              summary: Authorization header token revoked, expired, or mistyped
+              value:
+                type: /docs/api/errors#invalid_token
+                title: Invalid or expired API token
+                status: 401
+                detail: The Authorization header carried a token that does not match any active personal access token. It may be revoked, expired, or mistyped.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            session_superseded:
+              summary: Session ended because the account signed in from another location
+              value:
+                type: /docs/api/errors#session_superseded
+                title: Session ended — signed in elsewhere
+                status: 401
+                detail: You were signed out because this account signed in from another location. Only one active session per account is allowed at a time.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            session_timed_out:
+              summary: Session expired after inactivity
+              value:
+                type: /docs/api/errors#session_timed_out
+                title: Session timed out
+                status: 401
+                detail: Your session timed out after a period of inactivity. Sign in again to continue.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+    InvalidAuthenticityToken:
+      description: The request carried no authenticity token, or a token that does not belong to the caller's session (RFC 9457 problem details). Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token and retry once. Carries a legacy `toast` extension for older consumers.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class, a URI reference into the API docs.
+                example: /docs/api/errors#invalid_authenticity_token
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Invalid authenticity token
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 422
+              detail:
+                type: string
+                description: Occurrence-specific human explanation and how to repair it.
+                example: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+              toast:
+                type: object
+                additionalProperties: false
+                description: Legacy toast extension for older consumers.
+                properties:
+                  title:
+                    type: string
+                    description: Toast heading.
+                    example: Your form session expired.
+                  message:
+                    type: array
+                    description: Toast body lines.
+                    items:
+                      type: string
+                  variant:
+                    type: string
+                    description: Bootstrap alert variant.
+                    example: danger
+          examples:
+            missing_token:
+              summary: Mutation sent without X-CSRF-Token
+              value:
+                type: /docs/api/errors#invalid_authenticity_token
+                title: Invalid authenticity token
+                status: 422
+                detail: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+                toast:
+                  title: Your form session expired.
+                  message:
+                    - The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+                  variant: danger
     NotFound:
       description: Resource not found (RFC 9457 problem details). The body is identical for a truly nonexistent resource and one the caller may not learn exists.
       content:

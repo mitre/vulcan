@@ -1,10 +1,26 @@
 # frozen_string_literal: true
 
 module Api
-  # JSON auth endpoints for SPA consumption: /api/auth/me, login, logout.
+  # JSON auth endpoints for SPA consumption: /api/auth/csrf, me, login, logout.
   class AuthController < BaseController
-    skip_before_action :authenticate_user!, only: [:login]
+    skip_before_action :authenticate_user!, only: %i[csrf login]
     before_action :require_local_login_enabled!, only: [:login]
+
+    # Issues the authenticity token bound to the caller's session, creating
+    # the session when none exists. A frontend that is not rendered by the
+    # Rails layout needs this before it can POST login (login is
+    # CSRF-protected), and Devise redirects signed-in users away from the
+    # sign-in page, so the layout's meta tag is unreachable to it. The token
+    # is only usable together with the session cookie, so the response must
+    # never be cached. This issues a token; it exempts nothing from
+    # verify_authenticity_token.
+    #
+    # login resets the token and logout resets the whole session, so the
+    # caller fetches a token again after either.
+    def csrf
+      no_store
+      render json: { csrf_token: form_authenticity_token }
+    end
 
     def me
       render json: CurrentUserBlueprint.render(current_user)
@@ -22,7 +38,10 @@ module Api
       # in the shared rack_attack login throttles.
       if user&.valid_for_authentication? { user.valid_password?(params[:password]) } &&
          user.active_for_authentication?
-        sign_in(user)
+        # event: :authentication runs Devise's CSRF cleanup hook, which
+        # resets the session's authenticity token as the form login does; a
+        # plain sign_in records a :set_user event and skips it.
+        sign_in(user, event: :authentication)
         session[:auth_method] = :local
         render json: CurrentUserBlueprint.render(user)
       elsif user&.access_locked?
@@ -32,8 +51,12 @@ module Api
       end
     end
 
+    # sign_out with no scope takes Devise's sign_out_all_scopes path:
+    # warden.logout resets the whole session, as the HTML sign-out does, so
+    # the authenticity token, auth_method and the consent acknowledgment go
+    # with it.
     def logout
-      sign_out(current_user)
+      sign_out
       render json: { message: 'Signed out successfully' }
     end
 

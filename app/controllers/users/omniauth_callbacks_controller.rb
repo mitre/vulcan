@@ -67,7 +67,8 @@ module Users
       remember_me(user) if should_remember
 
       flash.notice ||= I18n.t('devise.sessions.signed_in')
-      sign_in_and_redirect(user) && return
+      # event: :authentication resets the CSRF token, as the form login does.
+      sign_in_and_redirect(user, event: :authentication) && return
     end
 
     # Devise routes /users/auth/<provider>/callback to the action named

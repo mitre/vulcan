@@ -48,6 +48,8 @@ Metrics/AbcSize:
   Enabled: false
 Metrics/ClassLength:
   Max: 750
+Metrics/ModuleLength:
+  Max: 108
 Metrics/ParameterLists:
   Max: 8
 Metrics/BlockLength:

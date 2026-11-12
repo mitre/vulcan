@@ -30,7 +30,7 @@
             %b-card-body
               %p
                 An account with this email already exists. Enter your password to link
-                %strong= OidcProviderRegistry.title_for(session[:pending_link]['provider'])
+                %strong= OidcProviderRegistry.title_for(session[:pending_link].with_indifferent_access['provider'])
                 to your account.
               = form_tag complete_link_path, method: :post do
                 .form-group

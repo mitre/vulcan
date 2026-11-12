@@ -1,0 +1,63 @@
+description: >-
+  The request carried no authenticity token, or a token that does not belong
+  to the caller's session (RFC 9457 problem details). Fetch a fresh token
+  from GET /api/auth/csrf, send it as X-CSRF-Token and retry once. Carries a
+  legacy `toast` extension for older consumers.
+content:
+  application/problem+json:
+    schema:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: Stable machine identifier for the error class, a URI reference into the API docs.
+          example: /docs/api/errors#invalid_authenticity_token
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Invalid authenticity token
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 422
+        detail:
+          type: string
+          description: Occurrence-specific human explanation and how to repair it.
+          example: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+        toast:
+          type: object
+          additionalProperties: false
+          description: Legacy toast extension for older consumers.
+          properties:
+            title:
+              type: string
+              description: Toast heading.
+              example: Your form session expired.
+            message:
+              type: array
+              description: Toast body lines.
+              items:
+                type: string
+            variant:
+              type: string
+              description: Bootstrap alert variant.
+              example: danger
+    examples:
+      missing_token:
+        summary: Mutation sent without X-CSRF-Token
+        value:
+          type: /docs/api/errors#invalid_authenticity_token
+          title: Invalid authenticity token
+          status: 422
+          detail: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+          toast:
+            title: Your form session expired.
+            message:
+              - The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+            variant: danger

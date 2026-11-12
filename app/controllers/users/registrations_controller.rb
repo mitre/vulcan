@@ -240,6 +240,12 @@ module Users
 
     protected
 
+    # Devise's sign_up calls sign_in without an event, which skips the
+    # CSRF token reset the form login gets; event: :authentication runs it.
+    def sign_up(resource_name, resource)
+      sign_in(resource_name, resource, event: :authentication)
+    end
+
     # Field-sensitivity split (Devise design + OWASP ASVS re-authentication
     # for sensitive account changes): non-sensitive fields (name, slack)
     # save without a password; changing the EMAIL — the login identifier —

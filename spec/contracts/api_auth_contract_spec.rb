@@ -13,6 +13,106 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
   let_it_be(:anchor_admin) { create(:user, admin: true) }
   let_it_be(:user) { create(:user, password: 'S3cure!#Pass999') }
 
+  describe 'GET /api/auth/csrf (no session)' do
+    it 'issues a session-bound token without authentication and forbids caching' do
+      get '/api/auth/csrf', headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :csrf_token
+      expect(body['csrf_token']).to be_present
+      expect(response.headers['Cache-Control']).to include('no-store')
+      expect(request.session[:_csrf_token]).to be_present
+    end
+  end
+
+  # config/environments/test.rb disables forgery protection suite-wide, so
+  # these examples turn it on for their duration; otherwise the contract
+  # would never show that the issued token is the one the login accepts.
+  describe 'GET /api/auth/csrf with forgery protection on' do
+    around do |example|
+      previous = ActionController::Base.allow_forgery_protection
+      ActionController::Base.allow_forgery_protection = true
+      example.run
+    ensure
+      ActionController::Base.allow_forgery_protection = previous
+    end
+
+    it 'refuses a login that carries no token with a 422 problem and leaves the caller signed out' do
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(response.media_type).to eq('application/problem+json')
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+      expect(body.dig('toast', 'variant')).to eq('danger')
+
+      get '/api/auth/me', headers: json_headers
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'accepts a login that carries the issued token' do
+      get '/api/auth/csrf', headers: json_headers
+      token = response.parsed_body['csrf_token']
+
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => token), as: :json
+      body = validate_and_parse!
+
+      expect(body['id']).to eq(user.id)
+    end
+
+    it 'refuses the pre-login token after sign-in and accepts a freshly fetched one' do
+      get '/api/auth/csrf', headers: json_headers
+      pre_login_token = response.parsed_body['csrf_token']
+
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => pre_login_token), as: :json
+      expect(response).to have_http_status(:ok)
+
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => pre_login_token), as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(response.media_type).to eq('application/problem+json')
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+
+      get '/api/auth/csrf', headers: json_headers
+      fresh_token = response.parsed_body['csrf_token']
+
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => fresh_token), as: :json
+      body = validate_and_parse!
+
+      expect(body['message']).to include('Signed out')
+    end
+
+    it 'resets the session on logout, so the pre-logout token is refused on the next login' do
+      get '/api/auth/csrf', headers: json_headers
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => response.parsed_body['csrf_token']), as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/csrf', headers: json_headers
+      pre_logout_token = response.parsed_body['csrf_token']
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => pre_logout_token), as: :json
+      validate_and_parse!
+
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => pre_logout_token), as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+
+      get '/api/auth/csrf', headers: json_headers
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => response.parsed_body['csrf_token']), as: :json
+      expect(validate_and_parse!['id']).to eq(user.id)
+    end
+  end
+
   describe 'GET /api/auth/me (authenticated)' do
     before { sign_in user }
 
