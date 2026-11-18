@@ -19,7 +19,7 @@
   "dependencies": {
     "lucide-vue-next": "^0.562.0",
     "mermaid": "^10.9.3",
-    "vitepress-openapi": "^0.2.0"
+    "vitepress-openapi": "^0.2.4"
   },
   "resolutions": {
     "mdast-util-to-hast": "^13.2.1"
