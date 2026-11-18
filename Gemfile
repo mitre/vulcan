@@ -173,7 +173,7 @@ gem 'blueprinter', '~> 1.2'
 
 gem 'blueprinter-activerecord', '~> 1.3'
 
-gem 'oj', '~> 3.16'
+gem 'oj', '~> 3.17'
 
 gem 'has_scope', '~> 0.9.0'
 gem 'pagy', '~> 43.5'
