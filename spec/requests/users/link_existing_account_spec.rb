@@ -71,6 +71,7 @@ RSpec.describe 'Link Existing Account on cold-match' do
 
       expect(response).to redirect_to(root_path)
       expect(local_user.identities.find_by(provider: provider_name.to_s).uid).to eq('link-uid')
+      expect(session[:pending_link]).to be_nil
       get '/api/auth/me', as: :json
       expect(response).to have_http_status(:ok)
     end

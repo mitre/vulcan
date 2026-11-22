@@ -70,9 +70,8 @@ class SessionsController < Devise::SessionsController
   end
 
   def complete_link
-    # The conflict handler stores the hash with symbol keys and the Marshal
-    # session serializer keeps them; read it with indifferent keys.
-    pending = session[:pending_link]&.with_indifferent_access
+    # The provider-conflict handler writes string keys.
+    pending = session[:pending_link]
     unless pending
       flash.alert = 'No pending account link. Please try signing in again.'
       redirect_to new_user_session_path
