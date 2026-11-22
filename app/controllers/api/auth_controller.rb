@@ -56,10 +56,7 @@ module Api
         # sign_in return early as "already signed in", which would keep the
         # stale session.
         sign_out(:user)
-        # event: :authentication runs Devise's CSRF cleanup hook, which
-        # resets the session's authenticity token as the form login does; a
-        # plain sign_in records a :set_user event and skips it.
-        sign_in(user, event: :authentication)
+        sign_in(user)
         session[:auth_method] = :local
         render json: CurrentUserBlueprint.render(user)
       elsif user&.access_locked?

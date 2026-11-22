@@ -107,8 +107,7 @@ class SessionsController < Devise::SessionsController
     )
     session.delete(:pending_link)
 
-    # event: :authentication resets the CSRF token, as the form login does.
-    sign_in(user, event: :authentication)
+    sign_in(user)
     flash.notice = "Your account has been linked to #{title} and you are now signed in."
     redirect_to root_path
   end

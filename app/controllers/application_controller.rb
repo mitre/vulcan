@@ -421,6 +421,19 @@ class ApplicationController < ActionController::Base
     "#{exception.message} Please contact an administrator if you believe this message is in error."
   end
 
+  # Every interactive sign-in rotates the session's authenticity token, as
+  # the form login does. Devise's CSRF cleaner runs only for the
+  # :authentication event, and Warden records a plain sign_in as :set_user,
+  # so this sets the event once for every caller (sign_in_and_redirect and
+  # Devise's own sign_up go through here). A stateless sign-in (store: false,
+  # the personal-access-token path) has no session token to rotate, and an
+  # event the caller names is kept.
+  def sign_in(resource_or_scope, *args)
+    options = args.extract_options!
+    options[:event] ||= :authentication unless options[:store] == false
+    super(resource_or_scope, *args, options)
+  end
+
   # True when the response will render the HTML layout. Api::BaseController
   # answers false for every request, whatever its Accept header.
   def layout_request?

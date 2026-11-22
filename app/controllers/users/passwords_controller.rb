@@ -60,8 +60,7 @@ module Users
         signed_in = sign_in_after_reset_password?
         if signed_in
           resource.after_database_authentication
-          # event: :authentication resets the CSRF token, as the form login does.
-          sign_in(resource_name, resource, event: :authentication)
+          sign_in(resource_name, resource)
         end
 
         # Same choice as Devise's PasswordsController#update: "now signed in"
