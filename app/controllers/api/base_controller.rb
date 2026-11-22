@@ -45,6 +45,14 @@ module Api
       render_page_out_of_range(exception)
     end
 
+    # 422 Unprocessable Content - Failed authenticity (CSRF) check. The
+    # inherited handler negotiates on Accept, so Accept: */* (curl's
+    # default) or no Accept header would match its HTML branch and get a
+    # flash and a redirect. Rails has already logged the failure.
+    rescue_from ActionController::InvalidAuthenticityToken do |_exception|
+      render_invalid_authenticity_token
+    end
+
     # 403 Forbidden - Authenticated but not authorized. Same rich body as
     # the HTML controllers' JSON branch (who-to-ask contacts included) —
     # this rescue exists only to skip format negotiation, never to serve a
