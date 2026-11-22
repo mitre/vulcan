@@ -400,6 +400,84 @@ describe("CommentThread", () => {
     });
   });
 
+  // REQUIREMENT: the thread always belongs to the comment named by the
+  // CURRENT parentReviewId prop. Hosts reuse one instance across comments
+  // (TriageSplitView renders a single, unkeyed CommentThread for whichever
+  // comment is active), so a prop change must redirect every subsequent
+  // fetch, cache read and cache invalidation to the new parent. Showing one
+  // comment's replies under another comment is a correctness failure, not a
+  // cosmetic one.
+  describe("following the current parentReviewId", () => {
+    beforeEach(() => {
+      getReviewResponses.mockResolvedValue({ data: { rows: [] } });
+    });
+
+    it("fetches the new parent's replies when expanded after the prop changes", async () => {
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1 },
+      });
+      await w.setProps({ parentReviewId: 2 });
+
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(getReviewResponses).toHaveBeenCalledWith(2);
+      expect(getReviewResponses).not.toHaveBeenCalledWith(1);
+    });
+
+    it("renders the new parent's replies, not the previous parent's", async () => {
+      getReviewResponses.mockImplementation((id) =>
+        Promise.resolve({
+          data: {
+            rows: [
+              {
+                id: id * 10,
+                comment: `reply to ${id}`,
+                commenter_display_name: "Replier",
+                commenter_imported: false,
+                created_at: "2026-05-04T00:00:00Z",
+              },
+            ],
+          },
+        }),
+      );
+
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1 },
+      });
+      // Load comment 1's thread, collapse it, then switch to comment 2.
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(w.text()).toContain("reply to 1");
+
+      await w.setProps({ parentReviewId: 2 });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(w.text()).toContain("reply to 2");
+      expect(w.text()).not.toContain("reply to 1");
+    });
+
+    it("refetches the new parent when its count changes while expanded", async () => {
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1, initiallyExpanded: true },
+      });
+      await new Promise((r) => setTimeout(r, 0));
+      getReviewResponses.mockClear();
+
+      // Host switched the active comment and that comment gained a reply.
+      await w.setProps({ parentReviewId: 2, responsesCount: 1, initiallyExpanded: true });
+      await w.setProps({ responsesCount: 2 });
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(getReviewResponses).not.toHaveBeenCalledWith(1);
+      expect(getReviewResponses).toHaveBeenCalledWith(2);
+    });
+  });
+
   describe("composable integration", () => {
     it("uses useCommentReactions composable (not ReactionToggleMixin)", () => {
       const w = mount(CommentThread, {
