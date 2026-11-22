@@ -17,9 +17,15 @@ class ApplicationController < ActionController::Base
   # session requests stay protected. Verified by api_token_auth_spec.
   protect_from_forgery with: :exception
 
-  before_action :setup_navigation, :authenticate_user!
-  before_action :check_access_request_notifications
-  before_action :check_locked_user_notifications
+  # The navigation, access-request and locked-user callbacks only fill data
+  # the HTML layout renders (application.html.haml); API clients read the
+  # same lists from GET /api/navigation. They run for HTML requests alone:
+  # each one reads current_user, and on a timed-out or superseded session
+  # that fetch signs the caller out and throws, which must not happen on a
+  # JSON request that needs no sign-in (GET /api/auth/csrf, login).
+  before_action :setup_navigation, if: :layout_request?
+  before_action :authenticate_user!
+  before_action :check_access_request_notifications, :check_locked_user_notifications, if: :layout_request?
 
   # AC-8: Determines if the current user must acknowledge consent.
   # Returns true when consent is enabled and the session has no valid acknowledgment.
@@ -417,6 +423,12 @@ class ApplicationController < ActionController::Base
     "#{exception.message} Please contact an administrator if you believe this message is in error."
   end
 
+  # True when the response will render the HTML layout. Api::BaseController
+  # answers false for every request, whatever its Accept header.
+  def layout_request?
+    request.format.html?
+  end
+
   def setup_navigation
     @navigation = []
     @navigation += helpers.base_navigation if current_user
@@ -425,7 +437,6 @@ class ApplicationController < ActionController::Base
   def check_access_request_notifications
     @access_requests = []
     return @access_requests unless user_signed_in?
-    return @access_requests if request.format.json? # Skip for API calls — navbar not rendered
 
     # Single query: find all access requests for projects where current user is admin.
     # Replaces N+1 loop that called can_admin_project? + eager_load per project.

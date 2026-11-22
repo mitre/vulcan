@@ -3,6 +3,11 @@
 module Api
   # JSON auth endpoints for SPA consumption: /api/auth/csrf, me, login, logout.
   class AuthController < BaseController
+    # Signing out ends the session, so it may not be refused because the
+    # session timed out: authenticate_user!'s lookup would run the timeout
+    # hook, which signs out and throws. Devise::SessionsController sets the
+    # same flag for destroy.
+    prepend_before_action(only: :logout) { request.env['devise.skip_timeout'] = true }
     skip_before_action :authenticate_user!, only: %i[csrf login]
     before_action :require_local_login_enabled!, only: [:login]
 
@@ -38,6 +43,12 @@ module Api
       # in the shared rack_attack login throttles.
       if user&.valid_for_authentication? { user.valid_password?(params[:password]) } &&
          user.active_for_authentication?
+        # A sign-in replaces whatever session the caller had. sign_out reads
+        # the old user without running the fetch callbacks, so a timed-out
+        # or superseded session neither throws from those hooks nor makes
+        # sign_in return early as "already signed in", which would keep the
+        # stale session.
+        sign_out(:user)
         # event: :authentication runs Devise's CSRF cleanup hook, which
         # resets the session's authenticity token as the form login does; a
         # plain sign_in records a :set_user event and skips it.

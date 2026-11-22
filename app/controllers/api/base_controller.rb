@@ -7,16 +7,12 @@ module Api
   # Provides:
   # - Consistent JSON error handling
   # - Correct HTTP status codes (401 vs 403)
-  # - Skips HTML-only before_actions
+  # - Never runs the HTML layout callbacks
   # - Returns 401 JSON instead of redirecting for unauthenticated requests
   #
   # All API controllers should inherit from this instead of ApplicationController
   #
   class BaseController < ApplicationController
-    # Skip HTML-only actions - APIs don't need navigation or notifications
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
-
     def authenticate_user!(*)
       if api_token_request? || user_signed_in?
         super
@@ -61,6 +57,14 @@ module Api
     # Note: 401 Unauthorized is for unauthenticated requests (handled above)
     rescue_from NotAuthorizedError do |exception|
       render_authorization_denied_json(exception)
+    end
+
+    private
+
+    # API responses never render the HTML layout, so its callbacks never run
+    # here, even for a browser that opens an /api/* URL with Accept: text/html.
+    def layout_request?
+      false
     end
   end
 end

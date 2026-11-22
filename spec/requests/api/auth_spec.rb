@@ -173,6 +173,75 @@ RSpec.describe 'Api::Auth' do
     end
   end
 
+  # GET /api/auth/csrf needs no sign-in, so a caller whose session has ended
+  # (timed out, or superseded by a newer sign-in) gets a token on the first
+  # call and can sign in again on the first attempt. Endpoints that need a
+  # sign-in still answer 401 session_timed_out.
+  describe 'after the session ends' do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:credentials) { { email: user.email, password: 'S3cure!#Pass999' } }
+
+    def sign_in_by_api
+      post '/api/auth/login', params: credentials, as: :json
+    end
+
+    context 'when it timed out' do
+      before do
+        sign_in_by_api
+        travel Devise.timeout_in + 1.minute
+      end
+
+      it 'issues a token on the first GET /api/auth/csrf' do
+        get '/api/auth/csrf', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['csrf_token']).to be_present
+      end
+
+      it 'signs in again on the first POST /api/auth/login' do
+        sign_in_by_api
+
+        expect(response).to have_http_status(:ok)
+        get '/api/auth/me', as: :json
+        expect(response.parsed_body['id']).to eq(user.id)
+      end
+
+      it 'signs out with 200 on DELETE /api/auth/logout, as the HTML sign-out does' do
+        delete '/api/auth/logout', as: :json
+
+        expect(response).to have_http_status(:ok)
+        get '/api/auth/me', as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it 'still answers an endpoint that needs a sign-in with 401 session_timed_out' do
+        get '/api/auth/me', as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#session_timed_out')
+      end
+    end
+
+    context 'when a newer sign-in superseded it' do
+      let(:newer) { open_session }
+
+      before do
+        sign_in_by_api
+        newer.post '/api/auth/login', params: credentials, as: :json
+      end
+
+      it 'issues a token on the first GET /api/auth/csrf' do
+        expect(newer.response).to have_http_status(:ok)
+
+        get '/api/auth/csrf', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['csrf_token']).to be_present
+      end
+    end
+  end
+
   describe 'DELETE /api/auth/logout after a password sign-in' do
     # Same reset as the HTML sign-out: the whole session goes, including the
     # authenticity token, auth_method and the consent acknowledgment.
