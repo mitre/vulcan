@@ -414,7 +414,7 @@ GEM
       net-ssh (>= 2.6.5, < 9.0.0)
     net-smtp (0.5.2)
       net-protocol
-    net-ssh (7.3.8)
+    net-ssh (7.3.10)
       logger
     netrc (0.11.0)
     nio4r (2.7.5)
@@ -519,7 +519,7 @@ GEM
       reline (>= 0.6.0)
     pstore (0.1.4)
     public_suffix (7.0.5)
-    puma (8.0.2)
+    puma (8.1.2)
       nio4r (~> 2.0)
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
