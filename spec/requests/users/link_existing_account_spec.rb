@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Link Existing Account on cold-match' do
   let(:password) { 'S3cure!#TestPas1' }
-  let(:provider_name) { Devise.omniauth_providers.first }
+  let(:provider_name) { oidc_test_provider }
   let!(:local_user) do
     create(:user, email: 'local-link@example.com', password: password,
                   password_confirmation: password, provider: nil, uid: nil)
