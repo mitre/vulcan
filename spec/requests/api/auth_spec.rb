@@ -199,6 +199,13 @@ RSpec.describe 'Api::Auth' do
         expect(response.parsed_body['csrf_token']).to be_present
       end
 
+      it 'issues a token on the first call from a browser that sends Accept: text/html' do
+        get '/api/auth/csrf', headers: { 'Accept' => 'text/html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['csrf_token']).to be_present
+      end
+
       it 'signs in again on the first POST /api/auth/login' do
         sign_in_by_api
 
@@ -235,6 +242,15 @@ RSpec.describe 'Api::Auth' do
         expect(newer.response).to have_http_status(:ok)
 
         get '/api/auth/csrf', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['csrf_token']).to be_present
+      end
+
+      it 'issues a token on the first call from a browser that sends Accept: text/html' do
+        expect(newer.response).to have_http_status(:ok)
+
+        get '/api/auth/csrf', headers: { 'Accept' => 'text/html' }
 
         expect(response).to have_http_status(:ok)
         expect(response.parsed_body['csrf_token']).to be_present

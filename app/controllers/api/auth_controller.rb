@@ -9,6 +9,13 @@ module Api
     # same flag for destroy.
     prepend_before_action(only: :logout) { request.env['devise.skip_timeout'] = true }
     skip_before_action :authenticate_user!, only: %i[csrf login]
+    # devise-security's password-expiry and paranoid-verification redirects
+    # run for HTML-format requests and look up the signed-in user, which on
+    # a timed-out or superseded session signs out and throws. The token
+    # endpoint needs no sign-in and returns only a token, so a browser
+    # sending Accept: text/html must get it on the first call; every action
+    # that needs a sign-in keeps both checks.
+    skip_before_action :handle_password_change, :handle_paranoid_verification, only: :csrf
     before_action :require_local_login_enabled!, only: [:login]
 
     # Issues the authenticity token bound to the caller's session, creating
