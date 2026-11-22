@@ -63,7 +63,7 @@ RSpec.describe 'Failed authenticity check' do
       post '/projects', params: { project: { name: 'No token' } }, headers: { 'Accept' => 'text/html' }
 
       expect(response).to have_http_status(:found)
-      expect(flash[:alert]).to eq('Your form session expired. Please try again.')
+      expect(flash[:alert]).to eq('Your form session expired. Reload the page and try again.')
     end
   end
 end

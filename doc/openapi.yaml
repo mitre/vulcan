@@ -13555,12 +13555,14 @@ components:
                   title:
                     type: string
                     description: Toast heading.
-                    example: Your form session expired.
+                    example: Request not completed
                   message:
                     type: array
                     description: Toast body lines.
                     items:
                       type: string
+                    example:
+                      - Your form session expired. Reload the page and try again.
                   variant:
                     type: string
                     description: Bootstrap alert variant.
@@ -13574,9 +13576,9 @@ components:
                 status: 422
                 detail: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
                 toast:
-                  title: Your form session expired.
+                  title: Request not completed
                   message:
-                    - The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+                    - Your form session expired. Reload the page and try again.
                   variant: danger
     NotFound:
       description: Resource not found (RFC 9457 problem details). The body is identical for a truly nonexistent resource and one the caller may not learn exists.

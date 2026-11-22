@@ -388,16 +388,14 @@ class ApplicationController < ActionController::Base
   # JSON callers get an RFC 9457 problem (422) they can act on. HTML callers
   # still get a flash alert and a redirect back, as under helpful_errors, but
   # the flash now names the cause instead of showing the exception message
-  # (admins) or the contact-an-administrator line (everyone else).
-  def invalid_authenticity_token(exception)
-    Rails.logger.warn("[invalid_authenticity_token] #{exception.class}: #{exception.message}")
-
+  # (admins) or the contact-an-administrator line (everyone else). Rails logs
+  # the failed check itself (log_warning_on_csrf_failure).
+  def invalid_authenticity_token(_exception)
     respond_to do |format|
       format.html do
-        flash.alert = 'Your form session expired. Please try again.'
+        flash.alert = FORM_SESSION_EXPIRED_MESSAGE
         redirect_back_or_to(root_path)
       end
-      format.json { render_invalid_authenticity_token }
       format.any { render_invalid_authenticity_token }
     end
   end

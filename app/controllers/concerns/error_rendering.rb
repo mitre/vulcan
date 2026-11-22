@@ -34,6 +34,12 @@ module ErrorRendering
     'the session may have timed out, been signed out, or ended because this account signed in ' \
     'from another location.'
 
+  # What a person sees when their form's authenticity token no longer
+  # matches the session (signed out in another tab, session reset): the HTML
+  # flash and the toast both use it. API clients read the problem's detail,
+  # which carries the steps to recover.
+  FORM_SESSION_EXPIRED_MESSAGE = 'Your form session expired. Reload the page and try again.'
+
   # Pure builder for the RFC 9457 problem document. Shared by the controller
   # concern (render_problem) and the Devise failure app so both emit a
   # byte-identical envelope.
@@ -93,12 +99,11 @@ module ErrorRendering
   # and retrying once; the legacy toast extension keeps older consumers
   # rendering a message until they read the problem fields directly.
   def render_invalid_authenticity_token
-    detail = 'The request carried no authenticity token, or a token that does not belong to this ' \
-             'session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.'
     render_problem(
       type: :invalid_authenticity_token, title: 'Invalid authenticity token', status: :unprocessable_content,
-      detail: detail,
-      toast: Toast.new(title: 'Your form session expired.', message: detail, variant: 'danger')
+      detail: 'The request carried no authenticity token, or a token that does not belong to this session. ' \
+              'Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.',
+      toast: Toast.new(title: 'Request not completed', message: FORM_SESSION_EXPIRED_MESSAGE, variant: 'danger')
     )
   end
 

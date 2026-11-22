@@ -214,6 +214,32 @@ RSpec.describe 'API error rendering (RFC 9457 problem details)' do
     end
   end
 
+  # A signed-in user whose form token went stale (signed out in another tab,
+  # say) sees a plain instruction in the toast; the problem's detail keeps
+  # the steps an API client follows.
+  describe 'invalid authenticity token for a signed-in JSON caller' do
+    around do |example|
+      previous = ActionController::Base.allow_forgery_protection
+      ActionController::Base.allow_forgery_protection = true
+      example.run
+    ensure
+      ActionController::Base.allow_forgery_protection = previous
+    end
+
+    it 'shows the user text in the toast and keeps the client steps in detail' do
+      sign_in project_admin
+      post '/projects', params: { project: { name: 'Stale token' } }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      body = response.parsed_body
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+      expect(body['detail']).to include('GET /api/auth/csrf')
+      expect(body.dig('toast', 'message')).to eq(['Your form session expired. Reload the page and try again.'])
+      expect(body.dig('toast', 'message').join).not_to include('X-CSRF-Token')
+      expect(body.dig('toast', 'message').join).not_to include(body.dig('toast', 'title'))
+    end
+  end
+
   describe 'the error documentation base resolves to a real page' do
     it 'points every type URI under the docs-site errors page' do
       expect(ErrorRendering::ERROR_DOCS_BASE).to eq('/docs/api/errors')
