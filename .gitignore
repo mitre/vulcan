@@ -35,6 +35,8 @@ docs/node_modules
 .env
 .env.*
 !.env.example
+!.env.development.example
+!.env.test.example
 !.env.production.example
 Caddyfile
 nginx.conf

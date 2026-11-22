@@ -12,10 +12,20 @@ FileUtils.chdir APP_ROOT do
   # This script is idempotent, so that you can run it at any time and get an expectable outcome.
   # Add necessary setup steps to this file.
 
-  unless File.exist?(".env")
-    puts "== Copying .env.example to .env =="
-    FileUtils.cp ".env.example", ".env"
-    puts "   Created .env from .env.example — review and adjust settings as needed."
+  # .env holds the shared database settings; .env.development and .env.test
+  # build on it (load order in .env.example). A .env from before the split
+  # still holds the development settings, and a new .env.development would
+  # override them, so it is not created next to one.
+  single_file_env = File.exist?(".env") && !File.exist?(".env.development")
+  %w[.env .env.development .env.test].each do |file|
+    next if File.exist?(file)
+    next if file == ".env.development" && single_file_env
+
+    puts "== Copying #{file}.example to #{file} =="
+    FileUtils.cp "#{file}.example", file
+  end
+  if single_file_env
+    puts "   .env still holds the development settings; to split it, see docs/site/development/setup.md."
   end
 
   puts "\n== Installing dependencies =="

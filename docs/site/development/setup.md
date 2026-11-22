@@ -164,29 +164,25 @@ Database names follow Rails convention: `vulcan_development`, `vulcan_test`, `vu
 
 ### Environment Variables
 
-Create `.env.development`:
+Settings live in three files, each copied from its `.example` (`bin/setup` copies any that are missing):
+
+| File | Loaded in | Holds |
+|------|-----------|-------|
+| `.env` | every environment, and by Docker Compose | Database connection and ports |
+| `.env.development` | development | Application settings: secrets, login options, OIDC, banner, SMTP |
+| `.env.test` | test | Only what CI's backend job sets (OIDC, optionally LDAP); everything else stays at the application default |
 
 ```bash
-# Database
-DATABASE_URL=postgresql://vulcan_dev:password@localhost/vulcan_development
-
-# Application
-SECRET_KEY_BASE=development_secret_key_minimum_30_characters_long
-RAILS_ENV=development
-
-# Email (optional)
-VULCAN_ENABLE_SMTP=false
-VULCAN_CONTACT_EMAIL=dev@localhost  # Also used as default SMTP username when SMTP enabled
-
-# Authentication (optional)
-VULCAN_ENABLE_USER_REGISTRATION=true
-VULCAN_ENABLE_LOCAL_LOGIN=true
-VULCAN_SESSION_TIMEOUT=1h    # Accepts: 30s, 15m, 1h, or plain numbers
-
-# Development features
-RAILS_LOG_LEVEL=debug
-VULCAN_WELCOME_TEXT="Development Environment"
+cp .env.example .env
+cp .env.development.example .env.development
+cp .env.test.example .env.test
 ```
+
+Rails (dotenv-rails) loads `.env.<environment>.local`, then `.env.local` (skipped in test), then `.env.<environment>`, then `.env`. The first file to set a variable wins, and a variable already set in the shell wins over every file, so `.env.development` and `.env.test` build on `.env` and override it. Put personal development overrides in `.env.local`; the test suite never reads it. All `.env*` files are ignored by git.
+
+To run the OIDC discovery specs against a real identity provider, set the issuer, client ID and secret of a test OIDC application in `.env.test`; with the placeholder issuer they skip.
+
+**Upgrading from a single `.env`:** it keeps working, but it is also loaded by the test suite. To split it, move everything except the database and port settings into `.env.development`, and copy `.env.test.example` to `.env.test`.
 
 ### Authentication Setup
 
