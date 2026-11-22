@@ -218,13 +218,7 @@ RSpec.describe 'API error rendering (RFC 9457 problem details)' do
   # say) sees a plain instruction in the toast; the problem's detail keeps
   # the steps an API client follows.
   describe 'invalid authenticity token for a signed-in JSON caller' do
-    around do |example|
-      previous = ActionController::Base.allow_forgery_protection
-      ActionController::Base.allow_forgery_protection = true
-      example.run
-    ensure
-      ActionController::Base.allow_forgery_protection = previous
-    end
+    include_context 'with forgery protection'
 
     it 'shows the user text in the toast and keeps the client steps in detail' do
       sign_in project_admin

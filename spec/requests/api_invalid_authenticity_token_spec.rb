@@ -12,15 +12,7 @@ RSpec.describe 'Failed authenticity check' do
 
   before { Rails.application.reload_routes! }
 
-  # config/environments/test.rb disables forgery protection suite-wide, so
-  # these examples turn it on for their duration.
-  around do |example|
-    previous = ActionController::Base.allow_forgery_protection
-    ActionController::Base.allow_forgery_protection = true
-    example.run
-  ensure
-    ActionController::Base.allow_forgery_protection = previous
-  end
+  include_context 'with forgery protection'
 
   let_it_be(:anchor_admin) { create(:user, admin: true) }
   let_it_be(:user) { create(:user, password: 'S3cure!#Pass999') }

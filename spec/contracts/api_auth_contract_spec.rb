@@ -25,17 +25,10 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
     end
   end
 
-  # config/environments/test.rb disables forgery protection suite-wide, so
-  # these examples turn it on for their duration; otherwise the contract
-  # would never show that the issued token is the one the login accepts.
+  # With forgery protection on, the contract shows that the issued token is
+  # the one the login accepts.
   describe 'GET /api/auth/csrf with forgery protection on' do
-    around do |example|
-      previous = ActionController::Base.allow_forgery_protection
-      ActionController::Base.allow_forgery_protection = true
-      example.run
-    ensure
-      ActionController::Base.allow_forgery_protection = previous
-    end
+    include_context 'with forgery protection'
 
     it 'refuses a login that carries no token with a 422 problem and leaves the caller signed out' do
       post '/api/auth/login',

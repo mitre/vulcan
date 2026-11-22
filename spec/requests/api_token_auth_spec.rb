@@ -141,16 +141,9 @@ RSpec.describe 'API Token Authentication' do
   end
 
   describe 'CSRF bypass for token auth' do
-    # config/environments/test.rb disables forgery protection suite-wide, so
-    # these examples turn it on for their duration; with it off, a token
-    # request would pass the check whether or not the bypass exists.
-    around do |example|
-      previous = ActionController::Base.allow_forgery_protection
-      ActionController::Base.allow_forgery_protection = true
-      example.run
-    ensure
-      ActionController::Base.allow_forgery_protection = previous
-    end
+    # With forgery protection off, a token request would pass the check
+    # whether or not the bypass exists.
+    include_context 'with forgery protection'
 
     let(:json_request_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
 
