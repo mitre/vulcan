@@ -6,8 +6,11 @@
 # the `status` code repeated in the body, and an occurrence-specific
 # `detail` saying why. Vulcan-specific help rides as RFC extension members —
 # `how_to_authenticate` on 401s, the project `admins` to ask on permission
-# denials. Domain and validation feedback (the toast contract) is a separate
-# channel and never flows through here.
+# denials. This concern owns the envelope (problem_document, render_problem)
+# and the resource problems; AuthenticationErrorRendering owns the
+# authentication problems and renders through the same envelope. Domain and
+# validation feedback (the toast contract) is a separate channel and never
+# flows through here.
 module ErrorRendering
   extend ActiveSupport::Concern
 
@@ -16,29 +19,6 @@ module ErrorRendering
   # heading anchor there, enforced by a correspondence guard in the error
   # rendering request spec.
   ERROR_DOCS_BASE = '/docs/api/errors'
-
-  # Both authentication methods, spelled out for 401 bodies — a failed
-  # request must say how to authenticate, not just that it did not.
-  HOW_TO_AUTHENTICATE = {
-    session: 'Sign in through the web UI (/users/sign_in) and retry with the session cookie.',
-    token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) ' \
-           'and send it in the request header: Authorization: Token <your-token>.'
-  }.freeze
-
-  # The no-credentials / no-valid-session explanation. A cleared session
-  # cookie is indistinguishable from never-signed-in at the controller
-  # branch, so the detail covers every way a session ends. Shared with the
-  # Devise failure app (SessionAwareFailureApp) so the copy never drifts.
-  NOT_AUTHENTICATED_DETAIL =
-    'This request included no API token and no valid signed-in session. If you were signed in, ' \
-    'the session may have timed out, been signed out, or ended because this account signed in ' \
-    'from another location.'
-
-  # What a person sees when their form's authenticity token no longer
-  # matches the session (signed out in another tab, session reset): the HTML
-  # flash and the toast both use it. API clients read the problem's detail,
-  # which carries the steps to recover.
-  FORM_SESSION_EXPIRED_MESSAGE = 'Your form session expired. Reload the page and try again.'
 
   # Pure builder for the RFC 9457 problem document. Shared by the controller
   # concern (render_problem) and the Devise failure app so both emit a
@@ -56,57 +36,6 @@ module ErrorRendering
     ), status: status, content_type: PROBLEM_MEDIA_TYPE
   end
 
-  # 401: no API token and no valid session.
-  def render_not_authenticated
-    render_problem(
-      type: :not_authenticated, title: 'Not authenticated', status: :unauthorized,
-      detail: NOT_AUTHENTICATED_DETAIL,
-      how_to_authenticate: HOW_TO_AUTHENTICATE
-    )
-  end
-
-  def render_invalid_token
-    render_problem(
-      type: :invalid_token, title: 'Invalid or expired API token', status: :unauthorized,
-      detail: 'The Authorization header carried a token that does not match any active personal access token. ' \
-              'It may be revoked, expired, or mistyped.',
-      how_to_authenticate: HOW_TO_AUTHENTICATE
-    )
-  end
-
-  # Login failure: the caller is already at the right door, so no
-  # how_to_authenticate routing block.
-  def render_invalid_credentials
-    render_problem(
-      type: :invalid_credentials, title: 'Invalid credentials', status: :unauthorized,
-      detail: 'The email or password is incorrect.'
-    )
-  end
-
-  # 422, not 401: the caller IS authenticated — they failed the re-verification
-  # challenge. A 401 here collides with the client's session-death handling,
-  # which reloads the page before any message can render.
-  def render_incorrect_password
-    render_problem(
-      type: :incorrect_password, title: 'Incorrect password', status: :unprocessable_content,
-      detail: 'Creating or managing API tokens re-verifies your identity, and the current password ' \
-              'provided does not match.'
-    )
-  end
-
-  # 422, not 403: the request carried no usable authenticity token for this
-  # session. The caller repairs it by fetching a token (GET /api/auth/csrf)
-  # and retrying once; the legacy toast extension keeps older consumers
-  # rendering a message until they read the problem fields directly.
-  def render_invalid_authenticity_token
-    render_problem(
-      type: :invalid_authenticity_token, title: 'Invalid authenticity token', status: :unprocessable_content,
-      detail: 'The request carried no authenticity token, or a token that does not belong to this session. ' \
-              'Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.',
-      toast: Toast.new(title: 'Request not completed', message: FORM_SESSION_EXPIRED_MESSAGE, variant: 'danger')
-    )
-  end
-
   # 403 with the who-to-ask extension. The legacy toast extension keeps
   # older consumers rendering a basic toast until they read the problem
   # fields directly.
@@ -119,27 +48,6 @@ module ErrorRendering
       detail: exception.message,
       admins: admins,
       toast: Toast.new(title: 'Not Authorized.', message: exception.message, variant: 'danger')
-    )
-  end
-
-  def render_session_authentication_required
-    render_problem(
-      type: :session_authentication_required, title: 'Session authentication required', status: :forbidden,
-      detail: 'Token management requires a signed-in browser session; API tokens cannot create or revoke tokens.'
-    )
-  end
-
-  def render_ip_not_allowed
-    render_problem(
-      type: :ip_not_allowed, title: 'IP address not allowed', status: :forbidden,
-      detail: "The request came from an IP address outside this token's allowlist."
-    )
-  end
-
-  def render_insufficient_token_scope(required_scope)
-    render_problem(
-      type: :insufficient_token_scope, title: 'Insufficient token scope', status: :forbidden,
-      detail: "This request requires the #{required_scope} scope, and the token does not grant it."
     )
   end
 

@@ -20,7 +20,7 @@ RSpec.describe 'Session-aware Devise failure app' do
         'You were signed out because this account signed in from another location. ' \
         'Only one active session per account is allowed at a time.'
       )
-      expect(doc[:how_to_authenticate]).to eq(ErrorRendering::HOW_TO_AUTHENTICATE)
+      expect(doc[:how_to_authenticate]).to eq(AuthenticationErrorRendering::HOW_TO_AUTHENTICATE)
     end
 
     it 'reports a timed-out session' do
@@ -28,15 +28,15 @@ RSpec.describe 'Session-aware Devise failure app' do
       expect(doc[:type]).to eq('/docs/api/errors#session_timed_out')
       expect(doc[:title]).to eq('Session timed out')
       expect(doc[:detail]).to eq('Your session timed out after a period of inactivity. Sign in again to continue.')
-      expect(doc[:how_to_authenticate]).to eq(ErrorRendering::HOW_TO_AUTHENTICATE)
+      expect(doc[:how_to_authenticate]).to eq(AuthenticationErrorRendering::HOW_TO_AUTHENTICATE)
     end
 
     it 'falls back to the shared not-authenticated body for a generic cause' do
       doc = SessionAwareFailureApp.problem_for(:unauthenticated)
       expect(doc[:type]).to eq('/docs/api/errors#not_authenticated')
       expect(doc[:title]).to eq('Not authenticated')
-      expect(doc[:detail]).to eq(ErrorRendering::NOT_AUTHENTICATED_DETAIL)
-      expect(doc[:how_to_authenticate]).to eq(ErrorRendering::HOW_TO_AUTHENTICATE)
+      expect(doc[:detail]).to eq(AuthenticationErrorRendering::NOT_AUTHENTICATED_DETAIL)
+      expect(doc[:how_to_authenticate]).to eq(AuthenticationErrorRendering::HOW_TO_AUTHENTICATE)
     end
 
     it 'falls back to not-authenticated for a nil / unknown cause' do

@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
   include ErrorRendering
+  include AuthenticationErrorRendering
   include AuthorizationDisclosure
   include ApiTokenAuthenticatable
   include LocalLoginEnforceable

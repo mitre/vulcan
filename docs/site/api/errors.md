@@ -28,6 +28,10 @@ The `Authorization` header carried a token that does not match any active person
 
 A sign-in attempt supplied an incorrect email or password.
 
+### account_locked
+
+A sign-in attempt named an account that is temporarily locked after too many failed sign-in attempts. Wait for the lock to expire and try again, or reset the password to unlock it.
+
 ### session_superseded
 
 You were signed out because this account signed in from another location. Only one active session per account is allowed at a time. Carries `how_to_authenticate`.

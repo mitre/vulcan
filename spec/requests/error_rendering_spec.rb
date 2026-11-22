@@ -253,6 +253,7 @@ RSpec.describe 'API error rendering (RFC 9457 problem details)' do
       # nothing emits.
       emitted = %w[
         app/controllers/concerns/error_rendering.rb
+        app/controllers/concerns/authentication_error_rendering.rb
         app/lib/session_aware_failure_app.rb
       ].flat_map { |f| Rails.root.join(f).read.scan(/type: :(\w+)/).flatten }.uniq.sort
 

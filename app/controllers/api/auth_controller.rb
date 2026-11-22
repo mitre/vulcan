@@ -74,19 +74,5 @@ module Api
       sign_out
       render json: { message: 'Signed out successfully' }
     end
-
-    private
-
-    # A distinct 401 for a :lockable account that has hit the failed-attempt
-    # threshold (STIG AC-07). Mirrors the HTML sign-in flow, which tells a
-    # locked user to wait rather than silently rejecting a correct password.
-    # render_problem comes from ErrorRendering (mixed into ApplicationController).
-    def render_account_locked
-      render_problem(
-        type: :account_locked, title: 'Account locked', status: :unauthorized,
-        detail: 'This account is temporarily locked due to too many failed sign-in attempts. ' \
-                'Please try again later or reset your password.'
-      )
-    end
   end
 end
