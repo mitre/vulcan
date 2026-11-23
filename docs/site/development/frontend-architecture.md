@@ -302,7 +302,8 @@ app/javascript/
 │   └── usersApi.js             # User endpoints
 ├── stores/                     # Layer 2a: Pinia stores
 │   ├── comments.js             # useCommentsStore
-│   └── triage.js               # useTriageStore (future)
+│   ├── ruleSelection.js        # useRuleSelectionStore
+│   └── theme.js                # useThemeStore
 ├── composables/                # Layer 2b: Shared stateful logic
 │   ├── useCommentReactions.js  # Optimistic reaction toggle
 │   ├── useCommentThread.js     # Thread expand/collapse/fetch
@@ -322,8 +323,7 @@ app/javascript/
 │   └── triage/                 # Layer 3+4: Triage workspace
 │       ├── TriageSplitView.vue # Container (uses stores)
 │       └── CommentTriageForm.vue    # Presentational (props only)
-├── mixins/                     # LEGACY — freeze, migrate to composables
-└── packs/                      # Entry points (use createVulcanApp)
+└── packs/                      # Entry points, one per page
 ```
 
 ## Migration Path (Current → Target)

@@ -31,8 +31,8 @@ bundle exec rspec spec/models/user_spec.rb:42
 # Run frontend tests
 yarn test:unit
 
-# Run tests with coverage
-COVERAGE=true rake spec:parallel
+# Run tests with coverage (SimpleCov only starts when CI is set)
+CI=true rake spec:parallel
 
 # Run only failed tests
 bundle exec rspec --only-failures
@@ -465,25 +465,30 @@ bundle exec rake parallel:prepare
 
 ### Database Cleaner Setup
 
+Most examples are isolated by Rails' transactional fixtures, which test-prof's
+`let_it_be`/`before_all` require. DatabaseCleaner only covers the specs whose
+browser thread cannot see that transaction. Both live in `spec/rails_helper.rb`:
+
 ```ruby
-# spec/support/database_cleaner.rb
-RSpec.configure do |config|
-  config.before(:suite) do
-    DatabaseCleaner.strategy = :transaction
-    DatabaseCleaner.clean_with(:truncation)
-  end
+config.use_transactional_fixtures = true
 
-  config.around(:each) do |example|
-    DatabaseCleaner.cleaning do
-      example.run
-    end
-  end
+# Clean once at suite start. :deletion, not :truncation — truncation takes an
+# AccessExclusiveLock and deadlocks parallel workers.
+config.before(:suite) do
+  DatabaseCleaner.clean_with(:deletion)
+end
 
-  config.around(:each, js: true) do |example|
-    DatabaseCleaner.strategy = :truncation
-    example.run
-    DatabaseCleaner.strategy = :transaction
-  end
+# Specs tagged :js or :truncation, and every type: :system spec, opt out of the
+# transaction and clean by deletion instead.
+config.before(:each, :js) do
+  self.use_transactional_tests = false
+  DatabaseCleaner.strategy = :deletion
+  DatabaseCleaner.start
+end
+
+config.after(:each, :js) do
+  DatabaseCleaner.clean
+  self.use_transactional_tests = true
 end
 ```
 
@@ -491,31 +496,30 @@ end
 
 ### SimpleCov Configuration
 
+Coverage is configured in `spec/simplecov_env.rb` and started from the top of
+`spec/rails_helper.rb`:
+
 ```ruby
-# spec/rails_helper.rb (at the top)
-if ENV['COVERAGE']
-  require 'simplecov'
-  SimpleCov.start 'rails' do
-    add_filter '/spec/'
-    add_filter '/config/'
-    add_filter '/vendor/'
-    
-    add_group 'Controllers', 'app/controllers'
-    add_group 'Models', 'app/models'
-    add_group 'Helpers', 'app/helpers'
-    add_group 'Libraries', 'lib/'
-    
-    minimum_coverage 90
-    minimum_coverage_by_file 80
-  end
-end
+# spec/rails_helper.rb
+SimpleCovEnv.start!
 ```
+
+`start!` returns immediately unless `ENV['CI']` is set, so a local run carries
+no coverage overhead. When it does run it tracks `{app,lib}/**/*.rb`, filters
+`config/initializers/`, `db/fixtures/` and `/vendor/ruby/`, and groups
+Controllers, Helpers, Mailers and Models. `minimum_coverage` is 0 — coverage is
+reported, not enforced — and `merge_timeout` is a year so that results from
+separate parallel runs still merge.
+
+`CI` is not coverage-only — it also makes `config.eager_load` true, runs
+Capybara headless, and skips the LDAP system spec. Setting it locally therefore
+gives a CI-shaped run, which is usually what you want when reading coverage.
 
 ### Viewing Coverage
 
 ```bash
 # Generate coverage report
-COVERAGE=true bundle exec rspec
+CI=true bundle exec rspec
 
 # Open in browser
 open coverage/index.html

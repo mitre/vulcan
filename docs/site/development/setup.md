@@ -227,7 +227,7 @@ User.create!(
    - Go to GitHub Settings > Developer settings > OAuth Apps
    - Set callback URL: `http://localhost:3000/users/auth/github/callback`
 
-2. Add to `config/vulcan.yml` under the `providers` key:
+2. Add to `config/vulcan.default.yml` under the `providers` key:
 ```yaml
 providers:
   - { name: 'github',
@@ -294,8 +294,8 @@ bundle exec rspec spec/models/user_spec.rb:42
 
 #### Test Coverage
 ```bash
-# Generate coverage report
-COVERAGE=true bundle exec rspec
+# Generate coverage report (SimpleCov only starts when CI is set)
+CI=true bundle exec rspec
 
 # View report
 open coverage/index.html
@@ -466,8 +466,8 @@ DATABASE_GSSENCMODE=disable
 ### Docker Tips
 
 1. Use `docker compose -f docker-compose.dev.yml up db -d` (database-only) for fastest development cycle
-2. Use `.dockerignore` for faster builds (excludes docs/, downloads/, coverage/)
-3. Production image uses UBI 9 multi-stage build with jemalloc + YJIT (~529MB)
+2. `.dockerignore` keeps build context small (excludes `coverage/`, `tmp/`, `node_modules/`). Note that `docs/` is deliberately **not** excluded — the documentation site builds from it.
+3. Production image uses a UBI 9 multi-stage build with jemalloc + YJIT
 4. `docker-compose.yml` supports Caddy or nginx reverse proxy profiles
 
 ## Performance Optimization
