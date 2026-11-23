@@ -37,13 +37,25 @@ Each rule maps to an SRG requirement. Click a rule in the left navigator to edit
 
 #### Rule Statuses
 
-| Status | Meaning | Required Fields |
+The status you pick decides which fields the editor opens up.
+
+| Status | Meaning | Fields you work in |
 |--------|---------|----------------|
-| Not Yet Determined | Default — not started | None (placeholder) |
-| Applicable - Configurable | System can be configured to comply | Title, Fix, Check, Vuln Discussion |
-| Applicable - Inherently Meets | System complies out of the box | Status Justification, Artifact Description |
-| Applicable - Does Not Meet | No way to achieve compliance | Status Justification, Mitigations |
-| Not Applicable | Requirement doesn't apply | Status Justification |
+| Not Yet Determined | Default — not started | Only Status; everything else is read-only until you decide |
+| Applicable - Configurable | System can be configured to comply | Title, Severity, Fix, Check, Vulnerability Discussion, Vendor Comments |
+| Applicable - Inherently Meets | System complies out of the box | Severity, Status Justification, Artifact Description, Vendor Comments |
+| Applicable - Does Not Meet | No way to achieve compliance | Severity, Status Justification, Mitigation fields, Vendor Comments |
+| Not Applicable | Requirement doesn't apply | Status Justification, Vendor Comments |
+
+::: warning Which of these are actually required?
+Nothing in this table is validated when you save. Two of them are checked
+at **lock** time instead: an Inherently Meets rule needs an Artifact
+Description and a Does Not Meet rule needs a Mitigation, or the lock skips
+it. On an **SRG** component, a Not Applicable requirement's Status
+Justification *is* validated on save. The DISA field matrix in
+[Field Requirements](../disa-process/field-requirements) is the authority
+on what the deliverable has to contain.
+:::
 
 #### Key Fields
 
@@ -62,7 +74,11 @@ When one rule's fix also satisfies another requirement:
 2. Click **Satisfies** in the toolbar to open the **Also Satisfies** picker
 3. Search for and select the satisfied rule(s)
 
-At export, a satisfied rule's Check and Fix are filled from the rule that satisfies it, so the two never disagree in the deliverable. The exception is **Applicable - Does Not Meet**: those rows export with Check and Fix blank regardless.
+Marking a rule as satisfied by another is a DISA nesting action, not just a
+cross-reference: Vulcan sets the satisfied rule to **Applicable - Does Not
+Meet** and writes a Status Justification and Mitigation naming the covering
+rule. Because the satisfied rule is then Does Not Meet, it exports with
+Check and Fix blank — the covering rule carries the procedure.
 
 ### 5. Review and Lock
 
@@ -79,9 +95,11 @@ From the component card, click **Lock** to lock all rules at once. Choose betwee
 - **Lock all rule fields** — every field locked
 - **Lock selection of fields** — pick the sections to lock
 
+A **Comment** is required either way; it lands in the audit trail.
+
 ### 6. Export
 
-From the component editor or project page, click **Export** and choose:
+From the project page click **Download**; on the component editor it is **Download** in the three-dots overflow menu. Then choose a purpose:
 
 | Mode | Purpose |
 |------|---------|
