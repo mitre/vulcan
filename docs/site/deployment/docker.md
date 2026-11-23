@@ -25,7 +25,8 @@ docker compose up
 - PostgreSQL starts with generated credentials
 - The entrypoint runs `db:prepare` (creates database, runs migrations)
 - Admin bootstrap runs automatically (hooked into `db:prepare`)
-- First user to register becomes admin (via `VULCAN_FIRST_USER_ADMIN=true`)
+- First user to register becomes admin (via `VULCAN_FIRST_USER_ADMIN=true`, which the
+  `.env.example` development template sets; `.env.production.example` sets it to `false`)
 
 ### Admin Bootstrap Options
 

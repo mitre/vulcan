@@ -35,7 +35,9 @@ compose file's `web` service builds from the repository when `IMAGE_NAME` is not
 
 Open your browser and navigate to: `http://localhost:3000`
 
-The first user to register becomes admin automatically.
+The first user to register becomes admin automatically — this holds for the development template
+(option 1). The production template sets `VULCAN_FIRST_USER_ADMIN=false` and disables
+self-registration, so use the admin bootstrap variables below instead.
 
 ::: tip Admin Bootstrap
 For automated deployments, you can pre-configure an admin account via environment variables (`VULCAN_ADMIN_EMAIL` and `VULCAN_ADMIN_PASSWORD`). See [Environment Variables](environment-variables.md) for details.
