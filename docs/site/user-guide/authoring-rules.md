@@ -12,8 +12,9 @@ Create Project → Add Component (select SRG) → Author Rules → Review → Lo
 
 Projects are containers for one or more Components. From the Projects page, click **New Project**.
 
-- **Name**: Organization or system name (e.g., "RHEL 9 STIG")
-- **Visibility**: Controls who can see the project in search results
+- **Project Title**: Organization or system name (e.g., "RHEL 9 STIG")
+- **Project Description**: required, not optional
+- **Visibility**: `discoverable` or `hidden`. Discoverable means non-members can see the project and request access.
 
 ### 2. Add a Component
 
@@ -22,7 +23,7 @@ A Component is a document in progress — either a STIG implementing an SRG's re
 1. Open your project
 2. Click **New Component** → **Create New Component**
 3. Choose **STIG**, then select one or more base SRGs (e.g., "General Purpose Operating System V3R3")
-4. Set a **prefix** (4 chars + hyphen + 2 chars, e.g., `RHEL-09`)
+4. Set the **STIG ID Prefix** (4 characters + hyphen + 2, e.g., `RHEL-09`). Every rule's STIG ID is generated from it.
 
 The SRGs' requirements become your rule set.
 
