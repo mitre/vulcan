@@ -127,17 +127,17 @@ RSpec.describe RelocationExecutor do
                                                adjudication_rationale: 'Out of scope for this SRG.')
 
       expect(described_class.new(executed, target_component: srg_component('EXTF-00', core_os))
-        .dry_run[:errors].join).to match(/no longer open/)
+        .dry_run[:errors].join).to include('no longer open')
       expect(described_class.new(declined, target_component: srg_component('EXTG-00', core_os))
-        .dry_run[:errors].join).to match(/no longer open/)
+        .dry_run[:errors].join).to include('no longer open')
       expect(described_class.new(other_pending, target_component: stig_target)
-        .dry_run[:errors].join).to match(/must be an SRG component/)
+        .dry_run[:errors].join).to include('must be an SRG component')
       expect(described_class.new(other_pending, target_component: released_target)
-        .dry_run[:errors].join).to match(/released/)
+        .dry_run[:errors].join).to include('released')
       expect(described_class.new(other_pending, target_component: source_component)
-        .dry_run[:errors].join).to match(/source component/)
+        .dry_run[:errors].join).to include('source component')
       expect(described_class.new(other_pending, target_component: app_only_target)
-        .dry_run[:errors].join).to match(/does not declare SRG-CORE-EXEC-OS as a source SRG/)
+        .dry_run[:errors].join).to include('does not declare SRG-CORE-EXEC-OS as a source SRG')
 
       expect do
         described_class.new(other_pending, target_component: stig_target, accepted_by: requester).execute!
@@ -161,7 +161,7 @@ RSpec.describe RelocationExecutor do
 
       relocation.executed_at = Time.current
       expect(relocation.save).to be false
-      expect(relocation.errors[:executed_at].join).to match(/tombstoned/)
+      expect(relocation.errors[:executed_at].join).to include('tombstoned')
     end
   end
 

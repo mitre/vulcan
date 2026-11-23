@@ -51,7 +51,7 @@ RSpec.describe 'Reviews' do
         expect(response_review.action).to eq('comment')
         expect(response_review.section).to eq('check_content')
         expect(response_review.user_id).to eq(triager.id)
-        expect(response_review.comment).to match(/stricter regex/)
+        expect(response_review.comment).to include('stricter regex')
       end
 
       # REQUIREMENT: responses_count on the triaged review is the true number

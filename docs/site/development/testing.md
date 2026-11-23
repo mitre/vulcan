@@ -712,7 +712,7 @@ bundle exec rspec spec/path/to/file_spec.rb --bisect
 ### GitHub Actions Configuration
 
 ```yaml
-# .github/workflows/test.yml
+# Simplified from .github/workflows/ci.yml
 name: Tests
 on: [push, pull_request]
 
@@ -734,22 +734,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '.ruby-version'
-          bundler-cache: true
-      
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '24'
-          cache: 'yarn'
-      
-      - name: Install dependencies
-        run: |
-          bundle install
-          yarn install
+      # Ruby, Node.js and Yarn at the versions in mise.lock, then the gem
+      # bundle and the Yarn dependencies
+      - uses: ./.github/actions/setup-toolchain
       
       - name: Setup database
         env:

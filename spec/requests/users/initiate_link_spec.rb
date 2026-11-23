@@ -6,7 +6,7 @@ RSpec.describe 'Users::RegistrationsController#initiate_link' do
   before { Rails.application.reload_routes! }
 
   let(:password) { 'S3cure!#TestPas1' }
-  let(:provider) { Devise.omniauth_providers.first }
+  let(:provider) { oidc_test_provider }
   let(:local_user) do
     create(:user, email: 'local@example.com', password: password,
                   password_confirmation: password, provider: nil, uid: nil)

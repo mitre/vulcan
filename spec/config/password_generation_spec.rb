@@ -13,7 +13,7 @@ RSpec.describe 'password generation security' do
 
   it 'shuffles generated password characters to prevent structural predictability' do
     method_body = extract_method(controller, 'generate_compliant_password')
-    expect(method_body).to match(/shuffle/),
+    expect(method_body).to include('shuffle'),
                            'Generated password must be shuffled to prevent predictable structure'
   end
 

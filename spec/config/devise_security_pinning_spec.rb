@@ -11,9 +11,9 @@ RSpec.describe 'Gemfile devise-security pinning' do
   it 'pins devise-security to a git ref, not a branch' do
     devise_security_line = gemfile.lines.find { |l| l.include?('devise-security') }
     expect(devise_security_line).not_to be_nil, 'devise-security gem not found in Gemfile'
-    expect(devise_security_line).not_to match(/branch:/),
+    expect(devise_security_line).not_to include('branch:'),
                                         'devise-security must not use branch: (non-reproducible)'
-    expect(devise_security_line).to match(/ref:/),
+    expect(devise_security_line).to include('ref:'),
                                     'devise-security must use ref: for reproducible builds'
   end
 end

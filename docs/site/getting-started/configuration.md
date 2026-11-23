@@ -60,7 +60,8 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 
 | Deployment Type | Config Source | Notes |
 |-----------------|-------------|-------|
-| Local dev (`foreman start`) | `.env` (copy from `.env.example`) | Open defaults for easy onboarding |
+| Local dev (`foreman start`) | `.env` + `.env.development` (copy from the `.example` files) | Open defaults for easy onboarding |
+| Test suite | `.env` + `.env.test` (copy from the `.example` files) | Only CI's test settings; see [development setup](../development/setup.md#environment-variables) |
 | Docker quickstart (`docker compose up`) | `Dockerfile` ENV + `vulcan.default.yml` | Matches dev defaults |
 | Heroku review app | `app.json` env overrides | Matches dev defaults |
 | Heroku production | Manual config via Heroku dashboard | Use `.env.production.example` as reference |
@@ -71,10 +72,11 @@ Each deployment type ships sensible defaults. Dev-friendly deployments enable lo
 
 #### Development (local Rails or Docker quickstart)
 
-**Required** — nothing beyond what ships in `.env.example`. Copy it and go:
+**Required** — nothing beyond what ships in the example files. Copy them and go:
 
 ```bash
 cp .env.example .env
+cp .env.development.example .env.development
 bundle exec rails db:prepare
 foreman start -f Procfile.dev
 ```
