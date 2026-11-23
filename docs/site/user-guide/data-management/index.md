@@ -17,7 +17,7 @@ Import/Export converts your Vulcan data to and from external formats that other 
 | **CSV** | Data analysts, scripting | Flat file for bulk processing |
 | **InSpec** | DevSecOps engineers | Automated compliance scanning profiles |
 
-Every export format is **lossy** by design. XCCDF only includes "Applicable - Configurable" rules. DISA Excel blanks out fields that DISA fills in during finalization. CSV flattens hierarchical data. Each format gives the consumer exactly what they need — nothing more.
+Every export format is **lossy** by design. A STIG's XCCDF only includes "Applicable - Configurable" rules (an SRG's includes only "Applicable" ones). DISA Excel blanks out fields that DISA fills in during finalization. CSV flattens hierarchical data. Each format gives the consumer exactly what they need — nothing more.
 
 **Use Import/Export when you need to:**
 - Submit to DISA for STIG publication
@@ -55,9 +55,9 @@ Backup/Restore creates a complete snapshot of a project — every field, every s
 
 | I want to... | Use |
 |--------------|-----|
-| Submit my component to DISA | Export → DISA Vendor Submission |
-| Share progress with my team in a spreadsheet | Export → Working Copy (Excel/CSV) |
-| Generate an InSpec profile for scanning | Export → STIG-Ready Publish Draft (InSpec) |
+| Submit my component to DISA | Download → DISA Vendor Submission |
+| Share progress with my team in a spreadsheet | Download → Working Copy (Excel/CSV) |
+| Generate an InSpec profile for scanning | Download → STIG-Ready Publish Draft (InSpec) |
 | Move my project to a new server | Backup → Restore on new instance |
 | Clone a project to start v2 | Backup → Create New Project from Backup |
 | Recover a deleted component | Backup → Restore into existing project |
@@ -72,13 +72,16 @@ When exporting from a Project, Vulcan asks you to pick a **purpose** first, then
 ```
 Purpose                    → Format        → What's Included
 ─────────────────────────────────────────────────────────────
-Working Copy               → CSV, Excel    → All rules, all fields, as-authored
+Working Copy               → CSV, Excel,   → All rules, all fields, as-authored
+                             InSpec
 DISA Vendor Submission     → Excel         → Non-NYD rules, DISA 17-column strict
 STIG-Ready Publish Draft   → XCCDF, InSpec → AC rules only, no satisfied-by
 Backup                     → JSON Archive  → Everything — full fidelity
 ```
 
-Components, STIGs, and SRGs use a simpler format-only picker (XCCDF or CSV) since they don't need mode selection.
+A single component offers the same four purposes. Published STIGs and SRGs
+are the ones with the simpler format-only picker (XCCDF or CSV): there is
+no purpose to choose for a document that is already published.
 
 ## Database vs Application Backup
 
@@ -89,8 +92,8 @@ Vulcan's backup system operates at the **application level** — it exports proj
 | **Scope** | One project at a time | Entire database |
 | **Portability** | Works across Vulcan instances | Same PostgreSQL version required |
 | **Selectivity** | Choose which components | All or nothing |
-| **User-accessible** | Yes, from the UI | Admin/ops only |
+| **User-accessible** | Yes, from the UI — any project member with read access | Admin/ops only |
 | **Cross-version** | Tolerant of schema changes | Exact schema match needed |
 | **Use case** | Project migration, sharing, cloning | Disaster recovery, server migration |
 
-For server-level disaster recovery, use `pg_dump` (documented in each [deployment guide](/deployment/docker)). For project-level work, use the in-app backup.
+For server-level disaster recovery, use `pg_dump` (see the [Docker](/deployment/docker), bare-metal and Kubernetes deployment guides). For project-level work, use the in-app backup.
