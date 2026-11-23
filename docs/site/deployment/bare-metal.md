@@ -7,7 +7,7 @@ This guide covers deploying Vulcan directly on Linux servers without containeriz
 - Ubuntu 20.04+ or RHEL/CentOS 8+ server
 - Root or sudo access
 - Minimum 2GB RAM, 2 CPU cores
-- PostgreSQL 18 database server
+- PostgreSQL database server (the project's Compose files use `postgres:18-alpine`, so 18 is the tested version)
 - Domain name with SSL certificate (recommended)
 
 ## System Preparation
@@ -29,14 +29,14 @@ sudo yum update -y
 sudo apt-get install -y build-essential git curl wget \
   libpq-dev libssl-dev libreadline-dev zlib1g-dev \
   libyaml-dev libffi-dev libgdbm-dev libncurses5-dev \
-  automake libtool bison nodejs npm nginx
+  automake libtool bison nginx
 
 # RHEL/CentOS
 sudo yum groupinstall -y "Development Tools"
 sudo yum install -y git curl wget postgresql-devel \
   openssl-devel readline-devel zlib-devel libyaml-devel \
   libffi-devel gdbm-devel ncurses-devel automake \
-  libtool bison nodejs npm nginx
+  libtool bison nginx
 ```
 
 ## Ruby Installation
@@ -59,6 +59,11 @@ rbenv global 3.4.10
 ruby -v  # Verify installation
 ```
 
+::: tip
+`3.4.10` is the version in `.ruby-version`, which is the source of truth. Check that file in the
+revision you are deploying and install the version it names — `bundle install` fails on a mismatch.
+:::
+
 ### Using RVM (Alternative)
 
 ```bash
@@ -70,6 +75,24 @@ source ~/.rvm/scripts/rvm
 rvm install 3.4.10
 rvm use 3.4.10 --default
 ruby -v  # Verify installation
+```
+
+## Node.js Installation
+
+The asset build runs esbuild and sass, so it needs a current Node.js — the version in your
+distribution's repositories is usually far too old. Install the major version the project's
+container image uses (`NODE_VERSION` in the `Dockerfile`) from NodeSource:
+
+```bash
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# RHEL/CentOS
+curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo -E bash -
+sudo yum install -y nodejs
+
+node -v  # Verify installation
 ```
 
 ## PostgreSQL Setup
@@ -88,6 +111,12 @@ sudo postgresql-setup --initdb
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
+
+::: tip
+Distribution packages often lag several major versions behind. If you want to match the version
+the project tests against, install from the [PostgreSQL APT or YUM
+repository](https://www.postgresql.org/download/) instead.
+:::
 
 ### Create Database and User
 
@@ -129,10 +158,17 @@ bundle config set --local deployment 'true'
 bundle config set --local without 'development test'
 bundle install
 
-# Install Node.js dependencies
-npm install -g yarn
-yarn install --production
+# Install JavaScript dependencies.
+# Corepack activates the Yarn version pinned in package.json's "packageManager".
+sudo corepack enable
+yarn install --frozen-lockfile
 ```
+
+::: warning
+Do **not** use `yarn install --production`. esbuild, sass and the Vue loaders are
+`devDependencies`, and `assets:precompile` invokes `yarn build` through jsbundling-rails — a
+production-only install makes the asset build fail.
+:::
 
 ### 4. Configure Application
 
@@ -146,9 +182,8 @@ cat > .env.production << EOF
 RAILS_ENV=production
 DATABASE_URL=postgresql://vulcan_user:secure_password@localhost/vulcan_production
 SECRET_KEY_BASE=$(bundle exec rails secret)
-RAILS_SERVE_STATIC_FILES=true
-RAILS_LOG_TO_STDOUT=false
-VULCAN_CONTACT_EMAIL=admin@example.com  # Also used as default SMTP username
+# VULCAN_CONTACT_EMAIL doubles as the default SMTP username
+VULCAN_CONTACT_EMAIL=admin@example.com
 VULCAN_APP_URL=https://vulcan.example.com
 # For SMTP email delivery, add:
 # VULCAN_ENABLE_SMTP=true
@@ -163,55 +198,46 @@ EOF
 ### 5. Setup Database
 
 ```bash
-# Load environment variables
-export $(cat .env.production | xargs)
+# Load environment variables (set -a exports every assignment in the file,
+# and sourcing tolerates the comments that `export $(... | xargs)` chokes on)
+set -a && . ./.env.production && set +a
 
-# Run database migrations
-bundle exec rails db:migrate
+# Create the schema and run any pending migrations
+bundle exec rails db:prepare
 
 # Precompile assets
 bundle exec rails assets:precompile
-
-# Create admin user (optional)
-bundle exec rails c
-# In Rails console:
-User.create!(
-  email: 'admin@example.com',
-  password: '1qaz!QAZ1qaz!QAZ',  # Must comply with DoD 2222 policy (15+ chars, 2 of each type)
-  admin: true,
-  confirmed_at: Time.now
-)
-exit
 ```
+
+### 6. Create the Admin User
+
+`db:prepare` runs the admin bootstrap automatically when `VULCAN_ADMIN_EMAIL` is set — add it to
+`.env.production` before the step above and the admin is created for you (a compliant random
+password is generated and logged if `VULCAN_ADMIN_PASSWORD` is omitted).
+
+Otherwise, create one interactively:
+
+```bash
+bundle exec rails db:create_admin
+```
+
+The task prompts for name, email and password. Passwords must satisfy the configured complexity
+policy (DoD "2222" by default: 15 characters, 2 each of upper, lower, digit and special).
 
 ## Web Server Configuration
 
 ### Nginx with Puma
 
-1. **Configure Puma** (`config/puma.rb`):
-
-```ruby
-# Puma configuration
-workers ENV.fetch("WEB_CONCURRENCY") { 2 }
-threads_count = ENV.fetch("RAILS_MAX_THREADS") { 5 }
-threads threads_count, threads_count
-
-preload_app!
-
-port ENV.fetch("PORT") { 3000 }
-environment ENV.fetch("RAILS_ENV") { "production" }
-
-pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
-
-# Allow puma to be restarted by rails restart command
-plugin :tmp_restart
-```
+1. **Puma** — the repository ships `config/puma.rb`; you do not need to write one. It listens on
+   `PORT` (default `3000`), sizes its thread pool from `RAILS_MAX_THREADS` (default `3`), and only
+   writes a PID file when `PIDFILE` is set. Set those in `.env.production` if you want different
+   values.
 
 2. **Configure Nginx** (`/etc/nginx/sites-available/vulcan`):
 
 ```nginx
 upstream vulcan_app {
-    server unix:///var/www/vulcan/tmp/sockets/puma.sock;
+    server 127.0.0.1:3000;
 }
 
 server {
@@ -417,7 +443,7 @@ mkdir -p $BACKUP_DIR
 pg_dump -U vulcan_user -h localhost $DB_NAME | gzip > $BACKUP_DIR/db_$DATE.sql.gz
 
 # Application files backup
-tar -czf $BACKUP_DIR/files_$DATE.tar.gz /var/www/vulcan/public/uploads
+tar -czf $BACKUP_DIR/files_$DATE.tar.gz /var/www/vulcan/storage
 
 # Keep only last 30 days of backups
 find $BACKUP_DIR -type f -mtime +30 -delete
@@ -452,10 +478,15 @@ max_wal_size = 4GB
 
 ```bash
 # Set in .env.production
-WEB_CONCURRENCY=2          # Number of Puma workers
-RAILS_MAX_THREADS=5        # Threads per worker
-DATABASE_POOL=25           # Database connection pool
+RAILS_MAX_THREADS=5        # Puma threads; also sets the Active Record pool size
+PORT=3000                  # Puma listen port
 ```
+
+`RAILS_MAX_THREADS` is the single knob for concurrency: `config/puma.rb` uses it for the thread
+pool and `config/database.yml` uses it for `pool`, so the two can never drift apart. The shipped
+Puma config runs a single process and declares no `workers`, so `WEB_CONCURRENCY` has no effect;
+run multiple Puma units behind nginx if you need more processes. There is no `DATABASE_POOL`
+variable.
 
 ## Troubleshooting
 
@@ -506,19 +537,21 @@ find /var/www/vulcan -type f -exec chmod 644 {} \;
 ## Maintenance Commands
 
 ```bash
-# Update application
+# Update application (master is the default branch; use a release tag for production)
 cd /var/www/vulcan
-git pull origin main
+git pull origin master
 bundle install
-yarn install
-bundle exec rails db:migrate
+yarn install --frozen-lockfile
+bundle exec rails db:prepare
 bundle exec rails assets:precompile
 sudo systemctl restart vulcan
 
 # Clear cache
 bundle exec rails tmp:cache:clear
 
-# Database maintenance
-bundle exec rails db:analyze
-bundle exec rails db:vacuum
+# Database maintenance (PostgreSQL autovacuum handles this routinely)
+psql -U vulcan_user -h localhost -d vulcan_production -c 'VACUUM ANALYZE'
 ```
+
+See the [Upgrade Guide](upgrade-guide.md) for version-specific steps — `rake upgrade:preflight`
+reports what a given upgrade will change before you apply it.
