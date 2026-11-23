@@ -233,6 +233,8 @@ paths:
                     message: Signed out successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/InvalidAuthenticityToken'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/navigation:
