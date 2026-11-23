@@ -264,6 +264,23 @@ class ApplicationController < ActionController::Base
     mailer.project_access_action(action, *).deliver_now if access_request_action?(action)
   end
 
+  # Every interactive sign-in rotates the session's authenticity token, as
+  # the form login does. Devise's CSRF cleaner runs only for the
+  # :authentication event, and Warden records a plain sign_in as :set_user,
+  # so this sets the event once for every caller (sign_in_and_redirect and
+  # Devise's own sign_up go through here). A stateless sign-in (store: false,
+  # the personal-access-token path) has no session token to rotate, and an
+  # event the caller names is kept.
+  #
+  # Defined above `private` deliberately: Devise::Controllers::SignInOut#sign_in
+  # is public, and narrowing it here would narrow it on every descendant,
+  # including the DeviseController subclasses.
+  def sign_in(resource_or_scope, *args)
+    options = args.extract_options!
+    options[:event] ||= :authentication unless options[:store] == false
+    super(resource_or_scope, *args, options)
+  end
+
   private
 
   # Devise hook (documented override point): land on the sign-in page
@@ -438,19 +455,6 @@ class ApplicationController < ActionController::Base
     consent_at = session[:consent_acknowledged_at] unless previous_occupant
     yield
     session[:consent_acknowledged_at] = consent_at if consent_at.present?
-  end
-
-  # Every interactive sign-in rotates the session's authenticity token, as
-  # the form login does. Devise's CSRF cleaner runs only for the
-  # :authentication event, and Warden records a plain sign_in as :set_user,
-  # so this sets the event once for every caller (sign_in_and_redirect and
-  # Devise's own sign_up go through here). A stateless sign-in (store: false,
-  # the personal-access-token path) has no session token to rotate, and an
-  # event the caller names is kept.
-  def sign_in(resource_or_scope, *args)
-    options = args.extract_options!
-    options[:event] ||= :authentication unless options[:store] == false
-    super(resource_or_scope, *args, options)
   end
 
   # True when the response will render the HTML layout. Api::BaseController

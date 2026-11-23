@@ -72,6 +72,19 @@ RSpec.describe 'CSRF token rotation on sign-in' do
     expect(session[:_csrf_token]).to eq(before_token)
   end
 
+  # The override must not narrow what it overrides.
+  # Devise::Controllers::SignInOut#sign_in is public, so an external caller
+  # (an engine, a Devise controller, a console) may call it; defining the
+  # override under `private` would make it private on ApplicationController
+  # and on every descendant, including the DeviseController subclasses.
+  it 'leaves Devise sign_in callable from outside the controller' do
+    [ApplicationController, SessionsController, Api::AuthController,
+     Users::RegistrationsController].each do |controller|
+      expect(controller.public_method_defined?(:sign_in)).to be(true),
+                                                             "#{controller} made Devise's public sign_in non-public"
+    end
+  end
+
   it 'keeps an event the caller names' do
     before_token = session_token_before
 
