@@ -14,7 +14,7 @@ Vulcan uses [VitePress](https://vitepress.dev/) for documentation:
 
 The documentation has its own `package.json` in `docs/` — separate from the Rails app. This is intentional:
 
-- **Rails app**: Vue 2.7.16 + Bootstrap 4 (in root `package.json`)
+- **Rails app**: Vue 2.7 + Bootstrap 4 (in root `package.json`)
 - **Documentation**: VitePress with Vue 3 (in `docs/package.json`)
 
 The root `package.json` scripts (`yarn docs:dev`, etc.) handle this transparently — they auto-install docs dependencies before running VitePress. You never need to `cd docs` manually.

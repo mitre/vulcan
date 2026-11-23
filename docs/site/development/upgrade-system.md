@@ -101,8 +101,8 @@ The Ruby-based `Upgrade::Runner` handles the same renames but requires Rails to 
 ## Testing
 
 ```bash
-bundle exec rspec spec/services/upgrade/        # Preflight + Runner (13 tests)
-bundle exec rspec spec/lib/tasks/upgrade_rake_spec.rb  # Rake tasks (3 tests)
+bundle exec rspec spec/services/upgrade/        # Preflight + Runner
+bundle exec rspec spec/lib/tasks/upgrade_rake_spec.rb  # Rake tasks
 ```
 
 Tests create and drop real temporary databases (named with `Process.pid` to avoid collisions). They verify:
@@ -125,7 +125,7 @@ bin/docker-entrypoint                       # Docker: rename → prepare → aut
 bin/setup                                   # Dev: rename → prepare → auto
 docs/site/deployment/upgrade-guide.md       # User-facing upgrade docs
 docs/site/development/upgrade-system.md     # This file (developer docs)
-spec/services/upgrade/preflight_spec.rb     # 9 tests
-spec/services/upgrade/runner_spec.rb        # 4 tests
-spec/lib/tasks/upgrade_rake_spec.rb         # 3 tests
+spec/services/upgrade/preflight_spec.rb     # Preflight state detection
+spec/services/upgrade/runner_spec.rb        # Action execution
+spec/lib/tasks/upgrade_rake_spec.rb         # Rake task output and exit codes
 ```
