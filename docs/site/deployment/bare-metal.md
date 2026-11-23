@@ -55,9 +55,9 @@ source ~/.bashrc
 # Install ruby-build
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
-# Install Ruby 3.4.12
-rbenv install 3.4.12
-rbenv global 3.4.12
+# Install Ruby 3.4.13
+rbenv install 3.4.13
+rbenv global 3.4.13
 ruby -v  # Verify installation
 ```
 
@@ -70,9 +70,9 @@ rbenv compiles Ruby against the system OpenSSL. If you install Ruby with mise in
 curl -sSL https://get.rvm.io | bash -s stable
 source ~/.rvm/scripts/rvm
 
-# Install Ruby 3.4.12
-rvm install 3.4.12
-rvm use 3.4.12 --default
+# Install Ruby 3.4.13
+rvm install 3.4.13
+rvm use 3.4.13 --default
 ruby -v  # Verify installation
 ```
 

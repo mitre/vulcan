@@ -21,13 +21,13 @@
 # match it (spec/config/toolchain_version_consistency_spec.rb fails otherwise).
 # Ruby is compiled here rather than installed by mise because the image's Ruby
 # must link the base image's OpenSSL (see build-base).
-ARG RUBY_VERSION=3.4.12
+ARG RUBY_VERSION=3.4.13
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
-# 3.4.12 (2026-10-23) fixes the Onigmo regexp compilation bugs behind
-# CVE-2026-89078, CVE-2026-93577, CVE-2026-97229 and CVE-2026-110264. It ships
-# the same default gems as 3.4.10: erb 4.0.4.1 (CVE-2026-41316) and net-imap
-# 0.5.15 (CVE-2026-4224x), which clear the ruby-layer default-gem findings.
-ARG RUBY_SHA256=5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479
+# 3.4.13 (2026-11-18) is the current patch release on the 3.4 series. Checked
+# against the release tarball rather than carried over from the previous pin:
+# it ships erb 4.0.4.1 as a default gem (CVE-2026-41316) and net-imap 0.5.15
+# as a bundled gem, so the ruby-layer gem findings stay closed.
+ARG RUBY_SHA256=d0d3bf3dd8c224a3c3b7ecd816a0f1b2cbcf4f87b5afcbdbe91d3fef177f351a
 ARG NODE_VERSION=24.22.2
 # SHA256 of node-v<version>-linux-<x64|arm64>.tar.gz, as mise.lock records them.
 ARG NODE_SHA256_AMD64=361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9

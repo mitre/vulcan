@@ -523,7 +523,7 @@ GEM
       nio4r (~> 2.0)
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
-    rack (3.2.8)
+    rack (3.2.9)
     rack-attack (6.8.0)
       rack (>= 1.0, < 4)
     rack-oauth2 (2.3.0)
@@ -533,7 +533,7 @@ GEM
       faraday-follow_redirects
       json-jwt (>= 1.11.0)
       rack (>= 2.1.0)
-    rack-protection (4.2.1)
+    rack-protection (4.2.2)
       base64 (>= 0.1.0)
       logger (>= 1.6.0)
       rack (>= 3.0.0, < 4)
@@ -873,7 +873,7 @@ DEPENDENCIES
   with_advisory_lock (~> 7.6)
 
 RUBY VERSION
-  ruby 3.4.12p148
+  ruby 3.4.13
 
 BUNDLED WITH
   4.0.23
