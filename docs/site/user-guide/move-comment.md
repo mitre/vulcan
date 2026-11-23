@@ -26,14 +26,16 @@ invariant).
 
 ## How to use
 
-1. Open the comment in the triage UI (split-pane view or single-comment
-   modal).
-2. Open the admin actions disclosure and click **Move to rule…**.
-3. The Move Comment modal asks for:
+1. Open the comment in the **split-pane** triage view (click **Triage**
+   on a row in the table or by-rule view). The admin actions live on the
+   split-pane decision form only.
+2. Open the **Admin** dropdown next to the decision buttons and choose
+   **Move to rule**.
+3. A panel expands below the form asking for:
    - **Target rule** — picker scoped to the current component.
    - **Reason** — required; written into the audit row and visible in
      the comment's prepended marker.
-4. Confirm. The move happens in one transaction.
+4. Click **Confirm move**. The move happens in one transaction.
 
 ## What happens on the server
 
@@ -44,17 +46,16 @@ invariant).
 - Sets `original_commentable_id` if it isn't already set — preserves the
   commenter's *first* target across multiple moves (see
   [Comment Provenance](./comment-provenance)).
-- Prepends a visible marker to the comment text:
+- Prepends a visible marker to the comment text, inline, ahead of the
+  original wording:
   ```
-  [Moved from CNTR-00-001028: typo'd rule id]
-  The original comment body...
+  [Moved from CNTR-00-001028: typo'd rule id] The original comment body...
   ```
-- Writes a `vulcan_audited` audit row capturing the `rule_id` /
-  `commentable_id` change with the operator's reason in `audit_comment`.
+- Writes a `vulcan_audited` audit row capturing the `rule_id` and
+  `comment` change, with the operator's reason in `audit_comment`.
 - **Cascades to the reply subtree** — every reply nested under the
   moved comment (recursively) also gets its `rule_id`/`commentable_*`
-  rewritten to the target rule so the whole thread stays attached. The
-  cascade uses the same depth-N walk as `admin_destroy`.
+  rewritten to the target rule so the whole thread stays attached.
 
 ## Permissions and gating
 
@@ -63,13 +64,16 @@ invariant).
   action runs; blank reasons are rejected with a 422 toast.
 - **Component-scoped** — target rule must be in the same component as
   the source. Cross-component moves are rejected.
-- **Frozen components** are blocked alongside every other triage write.
+- **Not blocked by the frozen-component gate.** Unlike ordinary triage
+  writes, the admin overrides (force-withdraw, restore, move,
+  hard-delete) stay available after a component's comment phase is
+  finalized, so a record can still be corrected.
 
 ## What the reader sees
 
 A comment that has been moved shows:
 
-- The `[Moved from PREFIX-RULE_ID: reason]` line at the top of the
+- The `[Moved from PREFIX-RULE_ID: reason]` marker at the start of the
   comment text.
 - The reply thread (if any) attached to it at the new location.
 - An audit row in the admin trail naming the operator, the time, the

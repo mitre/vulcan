@@ -12,7 +12,7 @@ Every JSON error the Vulcan API returns is an [RFC 9457](https://www.rfc-editor.
 }
 ```
 
-Validation and domain feedback (the toast contract used by the web UI) is a separate channel and never flows through these documents.
+Authentication, authorization and request errors all arrive this way. Validation and domain feedback is a separate channel and never flows through these documents: it comes back as the toast contract the web UI consumes, or, on some endpoints, as a bare `{"error": "..."}` body. Each endpoint page in this reference shows which shape it returns.
 
 ## Authentication errors (401)
 
@@ -30,7 +30,7 @@ A sign-in attempt supplied an incorrect email or password.
 
 ### session_superseded
 
-You were signed out because this account signed in from another location. Only one active session per account is allowed at a time. Carries `how_to_authenticate`.
+You were signed out because this account signed in from another location. By default an account may hold only one active session at a time; the limit is configurable per instance, and signing in past it evicts the oldest session. Carries `how_to_authenticate`.
 
 ### session_timed_out
 

@@ -61,9 +61,8 @@ group. When you pick a template:
   below your draft (separated by a blank line) — your typed text is
   preserved, not clobbered.
 
-The dropdown resets to the placeholder after each insertion, so
-re-selecting the same template re-fires (handy if you accidentally
-delete the inserted text).
+Picking the same template again inserts it again — handy if you
+accidentally delete the inserted text.
 
 You can always edit the inserted text before submitting — templates
 are starting points, not auto-sends.
@@ -73,9 +72,9 @@ are starting points, not auto-sends.
 The dropdown is hidden when the triage form doesn't have a project
 context (e.g. component-scoped views that don't propagate a
 `projectId`). When the project context is present and the project has
-no templates yet, the dropdown still renders but shows a disabled
-"No templates yet" placeholder so you know the feature is wired —
-just empty.
+no templates yet, the dropdown still renders, labelled
+"No templates yet" with nothing in it, so you know the feature is
+wired — just empty.
 
 ## Related
 

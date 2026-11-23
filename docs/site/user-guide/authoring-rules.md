@@ -12,8 +12,9 @@ Create Project → Add Component (select SRG) → Author Rules → Review → Lo
 
 Projects are containers for one or more Components. From the Projects page, click **New Project**.
 
-- **Name**: Organization or system name (e.g., "RHEL 9 STIG")
-- **Visibility**: Controls who can see the project in search results
+- **Project Title**: Organization or system name (e.g., "RHEL 9 STIG")
+- **Project Description**: required, not optional
+- **Visibility**: `discoverable` or `hidden`. Discoverable means non-members can see the project and request access.
 
 ### 2. Add a Component
 
@@ -22,7 +23,7 @@ A Component is a document in progress — either a STIG implementing an SRG's re
 1. Open your project
 2. Click **New Component** → **Create New Component**
 3. Choose **STIG**, then select one or more base SRGs (e.g., "General Purpose Operating System V3R3")
-4. Set a **prefix** (4 chars + hyphen + 2 chars, e.g., `RHEL-09`)
+4. Set the **STIG ID Prefix** (4 characters + hyphen + 2, e.g., `RHEL-09`). Every rule's STIG ID is generated from it.
 
 The SRGs' requirements become your rule set.
 
@@ -36,13 +37,25 @@ Each rule maps to an SRG requirement. Click a rule in the left navigator to edit
 
 #### Rule Statuses
 
-| Status | Meaning | Required Fields |
+The status you pick decides which fields the editor opens up.
+
+| Status | Meaning | Fields you work in |
 |--------|---------|----------------|
-| Not Yet Determined | Default — not started | None (placeholder) |
-| Applicable - Configurable | System can be configured to comply | Title, Fix, Check, Vuln Discussion |
-| Applicable - Inherently Meets | System complies out of the box | Status Justification, Artifact Description |
-| Applicable - Does Not Meet | No way to achieve compliance | Status Justification, Mitigations |
-| Not Applicable | Requirement doesn't apply | Status Justification |
+| Not Yet Determined | Default — not started | Only Status; everything else is read-only until you decide |
+| Applicable - Configurable | System can be configured to comply | Title, Severity, Fix, Check, Vulnerability Discussion, Vendor Comments |
+| Applicable - Inherently Meets | System complies out of the box | Severity, Status Justification, Artifact Description, Vendor Comments |
+| Applicable - Does Not Meet | No way to achieve compliance | Severity, Status Justification, Mitigation fields, Vendor Comments |
+| Not Applicable | Requirement doesn't apply | Status Justification, Vendor Comments |
+
+::: warning Which of these are actually required?
+Nothing in this table is validated when you save. Two of them are checked
+at **lock** time instead: an Inherently Meets rule needs an Artifact
+Description and a Does Not Meet rule needs a Mitigation, or the lock skips
+it. On an **SRG** component, a Not Applicable requirement's Status
+Justification *is* validated on save. The DISA field matrix in
+[Field Requirements](../disa-process/field-requirements) is the authority
+on what the deliverable has to contain.
+:::
 
 #### Key Fields
 
@@ -58,16 +71,20 @@ Each rule maps to an SRG requirement. Click a rule in the left navigator to edit
 When one rule's fix also satisfies another requirement:
 
 1. Open the satisfying rule
-2. Click **Satisfies** in the toolbar
+2. Click **Satisfies** in the toolbar to open the **Also Satisfies** picker
 3. Search for and select the satisfied rule(s)
 
-Satisfied rules automatically inherit the satisfying rule's check and fix text.
+Marking a rule as satisfied by another is a DISA nesting action, not just a
+cross-reference: Vulcan sets the satisfied rule to **Applicable - Does Not
+Meet** and writes a Status Justification and Mitigation naming the covering
+rule. Because the satisfied rule is then Does Not Meet, it exports with
+Check and Fix blank — the covering rule carries the procedure.
 
 ### 5. Review and Lock
 
 #### Per-Rule Review
-1. Click **Request Review** in the toolbar
-2. A reviewer examines the rule and approves or requests changes
+1. Click **Change Review Status** in the toolbar and pick **Request Review** in the **Complete a Review** modal
+2. A reviewer examines the rule and **Approve**s it or uses **Request Changes**
 3. Approved rules become locked (all fields read-only)
 
 #### Per-Section Lock
@@ -75,12 +92,14 @@ Reviewers and admins can lock individual sections (e.g., Status, Severity) while
 
 #### Bulk Lock
 From the component card, click **Lock** to lock all rules at once. Choose between:
-- **Lock entire rules** — all fields locked
-- **Lock sections only** — select which sections to lock
+- **Lock all rule fields** — every field locked
+- **Lock selection of fields** — pick the sections to lock
+
+A **Comment** is required either way; it lands in the audit trail.
 
 ### 6. Export
 
-From the component editor or project page, click **Export** and choose:
+From the project page click **Download**; on the component editor it is **Download** in the three-dots overflow menu. Then choose a purpose:
 
 | Mode | Purpose |
 |------|---------|
@@ -93,18 +112,20 @@ Available formats depend on the mode: XCCDF, InSpec, CSV, Excel, JSON Archive.
 
 ## Visual Field States
 
-When editing rules, colored left borders indicate field state:
+A **yellow left border** on a field group means that section is locked by
+a reviewer; the rest of the form stays editable, and a legend above the
+form explains the marking.
 
-- **Yellow border** — section locked by a reviewer
-- **Blue border** — rule is under review
-- **Grey border** — entire rule is locked
-
-A badge above the form shows the overall lock status. A legend explains active states.
+The other two lock states apply to the whole rule, so they show as a
+badge above the form rather than per field: a blue **Under Review**
+badge, or a grey **Rule Locked** badge, with the form disabled in both
+cases. When section locks are set, the badge instead names them
+("Status locked", or "3 sections locked").
 
 ## Tips
 
-- Use **Advanced Fields** toggle for metadata fields (rule weight, ident system, etc.)
-- The **InSpec Control Body** tab lets you add custom InSpec test code
-- **Related Rules** shows how other components implemented the same SRG requirement
-- **History** sidebar tracks all changes with revert capability
-- **Clone** duplicates a rule within the same component
+- The **Advanced Fields** toggle exposes metadata fields (rule weight, ident system, etc.). Turning it on is a component-admin action, and it asks you to confirm.
+- The **Test Script** tab is where you write the InSpec control body; the **Generated Control (Read-Only)** tab beside it shows the full control Vulcan assembles from it. Both are STIG-only — SRG requirements carry no InSpec.
+- **Related** shows how other components implemented the same SRG requirement
+- The **Rule Changelog** panel tracks all changes, with revert from any entry
+- **Clone** duplicates a rule within the same component (STIG components only)

@@ -7,7 +7,7 @@ Vulcan supports importing and exporting security guidance in multiple formats. T
 | Format | Import | Export |
 |--------|--------|--------|
 | **XCCDF XML** | SRGs, STIGs | Components, Projects, STIGs, SRGs |
-| **XLSX / CSV** | Components (spreadsheet import) | Components, STIGs, SRGs (CSV); Projects (XLSX) |
+| **XLSX / CSV** | Components (spreadsheet import) | Components and Projects (both); STIGs and SRGs (CSV) |
 | **InSpec** | — | Components, Projects |
 | **JSON Archive** | Backup restore (Projects) | Backup (Projects) |
 
@@ -22,7 +22,7 @@ For full-fidelity project backup, restore, and migration, see [Backup & Restore]
 Upload DISA XCCDF XML files to create SRG or STIG records in Vulcan.
 
 1. Navigate to **SRGs** or **STIGs** in the top navigation
-2. Click the **Upload** button
+2. Click **Upload SRG** / **Upload STIG** — the button only appears for Vulcan admins
 3. Select an XCCDF XML file (`.xml`)
 4. Vulcan parses the XML and creates the record with all rules
 
@@ -49,7 +49,7 @@ Components can be imported from spreadsheets (`.xlsx` or `.csv`):
 
 **Required columns:** SRG ID, STIG ID, Severity, Title, Vuln Discussion, Status, Check Content, Fix Text, Status Justification, Artifact Description
 
-**Optional columns:** Vendor Comments, Mitigation, InSpec Control Body, CCI (Ident)
+**Optional columns:** Vendor Comments, Mitigation, InSpec Control Body, CCI (Ident), Satisfies
 
 The spreadsheet importer maps column headers to fields, validates SRG IDs against the selected SRG, and converts severity values (`CAT I/II/III` to `high/medium/low`).
 
@@ -64,21 +64,21 @@ Existing components can be bulk-edited via spreadsheet round-trip:
 **How to use:**
 
 1. Navigate to the Component page
-2. Click **Update from Spreadsheet** in the command bar
+2. Open the three-dots overflow menu in the command bar and click **Update from Spreadsheet**
 3. Upload the edited `.xlsx` or `.csv` file
 4. Review the **word-diff preview** showing exactly what changed per rule
 5. Click **Apply Changes** to save, or **Cancel** to discard
 
 **Behavior:**
 
-- Rules are matched by SRG ID (the `SRG ID` column in the spreadsheet)
+- Rules are matched by STIG ID first (the numeric tail of the `STIG ID` column, which is unique per rule), falling back to SRG ID — which can be shared by several rules
 - Only **editable fields** are updated — section-locked fields are skipped
 - A word-level diff is shown for each changed field before applying
 - Satisfaction relationships are re-parsed from `vendor_comments` after update
 - Rules not found in the spreadsheet are left unchanged (no deletions)
 
 ::: warning Section Locks
-If a rule has locked sections (e.g., check content locked by a reviewer), those fields will be skipped during import even if the spreadsheet contains different values. The preview will show these as "skipped (locked)."
+If a rule has locked sections (e.g., check content locked by a reviewer), those fields will be skipped during import even if the spreadsheet contains different values. The preview collects them under **Protected Rules (Skipped)**, annotated `— locked` or `— section locked: <sections>`.
 :::
 
 ### Satisfaction Relationships
@@ -100,9 +100,14 @@ When a component is created or imported, Vulcan parses `vendor_comments` on each
 | `Some other text. Satisfied By: PHOS-03-000001.` | Yes (text before keyword) |
 | `Satisfied By: PHOS-03-000001   .` | Yes (extra whitespace) |
 
-When a rule has `satisfied_by` relationships, Vulcan automatically:
-- Sets its status to **Applicable - Configurable**
-- Inherits fix text and check content from the satisfying rule
+Marking a rule satisfied-by another **in the UI** applies DISA's nesting
+convention: Vulcan sets the satisfied rule to **Applicable - Does Not
+Meet** and generates a Status Justification and Mitigation naming the
+covering rule. Because the rule is then Does Not Meet, its Check and Fix
+export blank — the covering rule carries the procedure.
+
+Relationships discovered by *parsing* `vendor_comments` on import do not
+change any rule's status; they only record the relationship.
 
 ---
 
@@ -113,45 +118,42 @@ When a rule has `satisfied_by` relationships, Vulcan automatically:
 | Format | Available For | Description |
 |--------|--------------|-------------|
 | **XCCDF** | Components, Projects, STIGs, SRGs | DISA SCAP XML format |
-| **CSV** | Components, STIGs, SRGs | Spreadsheet with selectable columns |
+| **CSV** | Components, Projects, STIGs, SRGs | Spreadsheet with selectable columns |
 | **InSpec** | Components, Projects | Chef InSpec profile (ZIP) |
-| **Excel** | Projects | Standard `.xlsx` spreadsheet |
-| **DISA Excel** | Projects | DoD/DISA-specific format |
+| **Excel** | Components, Projects | Standard `.xlsx` spreadsheet |
+| **JSON Archive** | Components, Projects | Full-fidelity backup (ZIP) |
 
 ### Exporting a STIG or SRG
 
 1. Navigate to the STIG or SRG detail page
-2. Click the **Export** button
+2. Click the **Download** button
 3. Select the format:
    - **XCCDF-Benchmark** — full XCCDF XML
    - **CSV** — spreadsheet with column picker
 
-For CSV exports, you can select which columns to include. Default columns cover the most common fields (Rule ID, STIG/SRG ID, Severity, Title, Discussion, Check, Fix, CCI, NIST, Legacy IDs).
+For CSV exports, you can select which columns to include. The twelve default columns are Rule ID, STIG ID, SRG ID, Vuln ID, Severity, Title, Description, Check, Fix, CCI, 800-53 Controls and Legacy IDs.
 
 ::: info SRG vs STIG column differences
-SRG CSV exports label the `version` column as **SRG ID** (instead of STIG ID) and exclude SRG-specific reference fields that are redundant in the SRG context.
+SRG CSV exports label the `version` column as **SRG ID** (instead of STIG ID) and drop the two STIG-specific columns, `Vuln ID` and `SRG ID`, which have no meaning in the SRG context.
 :::
 
 ### Exporting a Component
 
 1. Navigate to the Component page
-2. Click the **Export** button
-3. Select the format:
-   - **XCCDF** — DISA SCAP XML
-   - **CSV** — spreadsheet
-   - **InSpec** — Chef InSpec profile (ZIP)
+2. Open the three-dots overflow menu and click **Download**
+3. Pick a **Purpose** — a component offers the same four purposes a project does — then a format. Across all four that means XCCDF, CSV, Excel, InSpec and JSON Archive.
 
 ### Exporting a Project
 
 Projects use a **purpose-first** export workflow with four modes:
 
 1. Navigate to the Project page
-2. Click the **Export** button
+2. Click the **Download** button
 3. Select the **Purpose** (mode):
 
 | Purpose | Formats | Description |
 |---------|---------|-------------|
-| **Working Copy** | CSV, Excel | Internal review and editing |
+| **Working Copy** | CSV, Excel, InSpec | Internal review and editing |
 | **DISA Vendor Submission** | Excel | 17-column strict DISA template |
 | **STIG-Ready Publish Draft** | XCCDF, InSpec | Draft content for DISA review |
 | **Backup** | JSON Archive | Full-fidelity archive (see [Backup & Restore](./backup-restore)) |
@@ -165,13 +167,20 @@ When exporting in DISA modes, components with only "Not Yet Determined" rules sh
 
 ### Satisfaction Export
 
-When a rule has `satisfied_by` relationships, the export includes the satisfaction information in the `vendor_comments` field using the canonical format:
+Satisfaction relationships are regenerated into the `vendor_comments`
+field on export. Stale text is stripped first, then one line per
+direction the rule actually has:
 
 ```
-Satisfied By: PREFIX-RULEID, PREFIX-RULEID.
+Satisfied By: PREFIX-RULEID, PREFIX-RULEID
 ```
 
-This format is designed to be re-importable — the same text will be correctly parsed on import.
+```
+Satisfies: PREFIX-RULEID, PREFIX-RULEID
+```
+
+A rule with both gets both, joined by `. `. The format is designed to be
+re-importable — the same text is parsed back on import.
 
 ### XCCDF Export Details
 
@@ -180,11 +189,14 @@ XCCDF exports produce valid DISA XCCDF-Benchmark XML with:
 - Benchmark metadata (status, title, description, version)
 - Group/Rule structure for each rule
 - Structured descriptions (VulnDiscussion, FalsePositives, FalseNegatives, Mitigations, etc.)
-- Check content with OVAL references
-- CCI and NIST control mapping
+- A `check` element carrying the check content. A STIG's check has no
+  content reference (`system="N/A"`); a published SRG's points at the SRG
+  document itself.
+- A CCI `ident` element. 800-53 control mapping is a CSV column only — it
+  is not emitted in XCCDF.
 
 ::: tip
-Only rules with status **Applicable - Configurable** (without `satisfied_by` relationships) are included in XCCDF and InSpec exports. Rules satisfied by other rules are excluded since their requirements are met elsewhere.
+On a STIG component, only rules with status **Applicable - Configurable** (and without `satisfied_by` relationships) are included in XCCDF and InSpec exports. Rules satisfied by other rules are excluded since their requirements are met elsewhere. On an SRG component the published XCCDF includes the **Applicable** requirements.
 :::
 
 ### InSpec Export Details
@@ -206,12 +218,12 @@ InSpec exports create a ZIP archive containing:
 | `srg_id` | SRG ID | ✅ | `SRG-OS-000001-GPOS-00001` |
 | `vuln_id` | Vuln ID | ✅ | `V-203591` |
 | `rule_severity` | Severity | ✅ | `medium` |
-| `title` | Title | ✅ | `The system must...` |
-| `vuln_discussion` | Description | ✅ | `Without authentication...` |
-| `check_content` | Check | ✅ | `Verify the system...` |
-| `fixtext` | Fix | ✅ | `Configure the system...` |
-| `ident` | CCI | ✅ | `CCI-000068` |
-| `nist_control_family` | 800-53 Controls | ✅ | `AC-17 (2)` |
+| `title` | Title | ✅ | `The operating system must…` |
+| `vuln_discussion` | Description | ✅ | `Without verification of the…` |
+| `check_content` | Check | ✅ | `Verify the operating system…` |
+| `fixtext` | Fix | ✅ | `Configure the operating sys…` |
+| `ident` | CCI | ✅ | `CCI-000366` |
+| `nist_control_family` | 800-53 Controls | ✅ | `CM-6 b` |
 | `legacy_ids` | Legacy IDs | ✅ | `V-56571, SV-70831` |
 | `status` | Status | | `Applicable - Configurable` |
 | `rule_weight` | Weight | | `10.0` |

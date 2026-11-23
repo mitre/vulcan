@@ -101,9 +101,9 @@ Each additional row copies the SRG fields (IA Control, CCI, SRG ID, SRG Requirem
 
 ### Satisfies Relationships
 
-When one STIG rule covers multiple SRG requirements, the satisfaction relationship is documented in the **VulnDiscussion** field (e.g., "Satisfies: SRG-OS-000480-GPOS-00227, SRG-OS-000123-GPOS-00456").
+When one STIG rule covers multiple SRG requirements, **XCCDF exports** append the satisfaction relationship to the **VulnDiscussion** element (e.g., "Satisfies: SRG-OS-000480-GPOS-00227, SRG-OS-000123-GPOS-00456"). The spreadsheet paths carry it in their own `Satisfies` column instead — and because that column is not one of the 17 DISA template columns, the relationship does not appear in the Vendor Submission workbook at all.
 
-Rules that are "satisfied by" another rule are excluded from the public STIG XCCDF but included in the DISA spreadsheet submission.
+Rules that are "satisfied by" another rule are excluded from the public STIG XCCDF. They are included in the DISA spreadsheet submission by default; the export offers an opt-out that drops them.
 
 ### CCI-000366: Security Best Practices
 
@@ -117,9 +117,9 @@ For security features that don't align with any SRG requirement, use CCI-000366 
 | Technology layer (OS, Web, DB) | Component (STIG) |
 | SRG requirement | SRG Rule |
 | STIG rule/row in spreadsheet | Rule |
-| Vendor submission (spreadsheet) | DISA Excel export |
+| Vendor submission (spreadsheet) | DISA Vendor Submission export (Excel) |
 | Published STIG (XCCDF) | XCCDF export |
-| Core SRG (SRG-NET / SRG-OS / SRG-APP) | Catalog SRG, uploaded by the SRG author community |
+| Core SRG (Operating System / Network / Application Core) | Catalog SRG, uploaded by a Vulcan admin |
 | Derived SRG being authored | Component (SRG) |
 | Published SRG (XCCDF) | SRG release — catalog entry + SRG XCCDF |
 

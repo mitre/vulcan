@@ -37,7 +37,7 @@ The Intent Form is the first step in the DISA STIG process. It formally notifies
 |-------|------|---------------|
 | Product Name | Text | Project name |
 | Product Vendor | Text | Project metadata |
-| Product Version | Text | Component version |
+| Product Version | Text | Project metadata |
 | Previously Worked With APL | Yes/No | Project metadata |
 | Product/Security Guide URL | URL | Project metadata |
 | Brief Product Description | Textarea | Project description |

@@ -1,6 +1,6 @@
 # Vulcan API
 
-Vulcan provides a REST API for programmatic access to projects, components, rules, STIGs, and SRGs. All endpoints return JSON and require authentication via Personal Access Tokens (PATs).
+Vulcan provides a REST API for programmatic access to projects, components, rules, STIGs, and SRGs. Every endpoint requires authentication — either a signed-in browser session or a Personal Access Token (PAT). Most endpoints return JSON; export endpoints return the file you asked for (XCCDF, CSV, a workbook, a zip).
 
 ::: details Glossary
 - **STIG** — Security Technical Implementation Guide. A DoD standard for securing systems.
@@ -85,7 +85,7 @@ Browse the API by resource using the sidebar. Each endpoint page includes reques
 }
 ```
 
-**Mutation endpoints** (POST, PUT, PATCH, DELETE) return a toast envelope:
+**Mutation endpoints** (POST, PUT, PATCH, DELETE) mostly return a toast envelope:
 
 ```json
 {
@@ -97,13 +97,20 @@ Browse the API by resource using the sidebar. Each endpoint page includes reques
 }
 ```
 
-**Error responses**:
+Mutations that hand back state the caller needs — triage and bulk triage, merge, review edits, reaction toggles, token creation, login — return the resource instead. Each endpoint page in this reference shows its own response schema; that is the authority.
+
+**Error responses** are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details documents served as `application/problem+json`:
 
 ```json
 {
-  "error": "Not found"
+  "type": "/docs/api/errors#not_found",
+  "title": "Not found",
+  "status": 404,
+  "detail": "The requested resource could not be found."
 }
 ```
+
+See [API Errors](./errors) for every error type.
 
 ## OpenAPI Specification
 
@@ -112,7 +119,7 @@ The complete OpenAPI 3.2 specification is available for download:
 - **JSON**: [openapi.json](/api/openapi.json)
 - **YAML**: [openapi.yaml](/api/openapi.yaml)
 
-Every Vulcan instance also serves both formats at `/openapi.json` and `/openapi.yaml`.
+Every Vulcan instance also serves both formats at `/openapi.json` and `/openapi.yaml`. Like every other endpoint, those two require authentication.
 
 Use these with tools like [Postman](https://www.postman.com/), [Bruno](https://www.usebruno.com/), or any OpenAPI-compatible client.
 
@@ -127,6 +134,7 @@ Rate limiting is enforced via [rack-attack](https://github.com/rack/rack-attack)
 | File uploads | 10/min | per IP |
 | Comment creation | 10/min, 100/hour | per user |
 | Reaction POST | 60/min | per user |
+| Reaction GET | 300/min | per user |
 | API token requests | 300/min | per IP |
 
 When rate-limited, the API returns `429 Too Many Requests` with a toast body:
@@ -135,7 +143,7 @@ When rate-limited, the API returns `429 Too Many Requests` with a toast body:
 {
   "toast": {
     "title": "Rate limited",
-    "message": ["Too many requests. Please try again later."],
+    "message": ["Too many requests. Please wait and try again."],
     "variant": "danger"
   }
 }

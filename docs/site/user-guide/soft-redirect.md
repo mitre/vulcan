@@ -13,7 +13,7 @@ the parent-control view.
 ## What the commenter sees
 
 When the active requirement in the comment composer is satisfied-by a
-parent, an InfoNotice appears above the textarea:
+parent, an info banner appears above the textarea:
 
 > This requirement is satisfied by **CNTR-00-000010**. Your comment will
 > be posted there.
@@ -31,8 +31,7 @@ Server-side, a `before_create` callback rewrites the new review's
 text gets a human-readable prefix:
 
 ```
-[Re: CNTR-00-001028]
-The original comment body here...
+[Re: CNTR-00-001028] The original comment body here...
 ```
 
 And the original rule is captured machine-readably on
@@ -48,6 +47,8 @@ parsing prose.
   no redirect.
 - Replies (a reply to a comment that's already on the parent) — replies
   stay attached to their parent comment and don't re-redirect.
+- SRG components — authored SRG requirements carry no satisfies
+  relationships at all, so there is never a parent to redirect to.
 
 ## Related
 

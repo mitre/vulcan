@@ -19,7 +19,7 @@ Creating a component begins with one choice — **STIG** or **SRG**:
 - **STIG** — implement an existing SRG's requirements for a specific product. Each requirement is worked to a compliance posture: Configurable, Inherently Meets, Does Not Meet, or Not Applicable.
 - **SRG** — author a new Security Requirements Guide derived from core SRGs. Each requirement is a decision about whether it applies to the technology, with tailored content.
 
-The choice is **permanent for the component** — the two profiles use different status vocabularies and different requirement records, so there is no in-place conversion. If you pick the wrong profile, delete the component and recreate it (export a backup archive first to carry your content across; the archive restores through the import flow).
+The choice is **permanent for the component** — the two profiles use different status vocabularies and different requirement records, so there is no in-place conversion. If you pick the wrong profile, delete the component and recreate it. A backup archive will not carry the content across: it records the component's kind and restores as the same kind.
 
 What the choice changes:
 
@@ -67,11 +67,13 @@ Sometimes a requirement belongs in a different SRG rather than being Not Applica
 
 SRG components use the same collaboration workflow as STIG components: authoring, review requests, approvals, comments, and **locking** work identically. Every requirement must be locked before the SRG can be released.
 
-A draft SRG takes public comment exactly like a draft STIG. The component's comment period moves through three phases:
+A draft SRG takes public comment exactly like a draft STIG. The component's comment period moves through these states:
 
 1. **Open** — accepting new comments; adjudication can begin while the period is open.
-2. **Closed, adjudicating** — no new comments; existing comments are still being triaged and dispositioned.
-3. **Closed, finalized** — the comment record is frozen.
+2. **Closed (Adjudicating)** — no new comments; existing comments are still being triaged and dispositioned.
+3. **Closed (Finalized)** — the comment record is frozen.
+
+A component can also sit at a plain **Closed** with no reason, which pauses commenting without committing to a stage.
 
 ## Releasing the SRG
 
