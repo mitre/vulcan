@@ -4,19 +4,20 @@ Vulcan administrators can create, edit, and delete user accounts from the **User
 
 ## Accessing the Users Page
 
-Navigate to `/users` or click the user icon in the navigation bar. You must be logged in as an admin.
+Navigate to `/users`, or open the avatar menu at the top right and choose **Manage Users** — that entry only appears for admins.
 
-The page shows all registered users with their name, email, authentication provider, role, and last sign-in date.
+The table lists every registered user under the columns **User**, **Type**, **Role** and **Last Sign In**. Email is not its own column: it sits in the User cell, on the hover card of the name badge.
 
 ## Creating Users
 
-Click **Create User** to open the creation modal.
+Click **Create User** to open the **Create New User** modal.
 
-### Required Fields
+### Fields
 
-- **Name** — the user's display name
-- **Email** — must be unique across all accounts
-- **Admin** — optional checkbox to grant admin privileges
+- **Name** — required; the user's display name
+- **Email** — required; must be unique across all accounts
+- **Slack Member ID** — optional
+- **Grant admin privileges** — optional checkbox
 
 ### Password Handling
 
@@ -46,25 +47,22 @@ Click the **edit** (pencil) icon on any user row to open the Edit User modal.
 
 - **Name** — update the display name
 - **Email** — update the email address (no re-confirmation required)
-- **Admin** — toggle admin privileges on or off
+- **Slack Member ID** — update or clear it
+- **Admin privileges** — toggle admin on or off
 
 ### Password Management
 
 Password management tools are only available for **local** users (not OIDC, LDAP, or GitHub users). The provider badge in the modal shows the authentication method.
 
-#### SMTP Enabled
+- **Send Password Reset Email** — sends a Devise reset email to the user's address. Only offered when SMTP is enabled.
 
-- **Send Password Reset Email** — sends a Devise reset email to the user's address
-
-#### SMTP Disabled
-
-- **Generate Reset Link** — creates a one-time reset URL. Copy it and deliver it to the user. The link expires according to Devise's `reset_password_within` setting (default: 6 hours).
+- **Generate Reset Link** — creates a one-time reset URL. Copy it and deliver it to the user. Always available to admins, SMTP or not. The link expires according to Devise's `reset_password_within` setting, which Vulcan sets to 2 hours.
 
 - **Set password manually** — expand the collapsed section to set a password directly. Requires password and confirmation fields. The password must meet the configured policy. Use this for urgent access needs.
 
 ## Account Lockout
 
-When account lockout is enabled (default), user accounts are automatically locked after consecutive failed login attempts. Locked users see an "account is locked" message when attempting to log in.
+When account lockout is enabled (default), a user account locks after too many consecutive failed login attempts — three by default. Locked users are told the account is locked when they try to sign in.
 
 ### Identifying Locked Users
 
@@ -74,13 +72,15 @@ On the Users page, locked accounts display a **Locked** badge (yellow) next to t
 
 Three methods are available:
 
-1. **Admin unlock** — open the Edit User modal for a locked user. A warning alert shows the number of failed attempts with an **Unlock** button. Click to unlock immediately. Works regardless of SMTP configuration.
+1. **Admin unlock** — open the Edit User modal for a locked user. A **Status** row shows a yellow **Locked** badge and the failed-attempt count, with an **Unlock** button beside it. Click to unlock immediately. Works regardless of SMTP configuration and regardless of the unlock strategy — this is Vulcan's own endpoint, not a Devise one.
 
 2. **Time-based auto-unlock** — the account automatically unlocks after the configured period (default: 15 minutes).
 
 3. **Email unlock** — if SMTP is configured, the user receives an unlock link via email when their account is locked.
 
-The default unlock strategy (`both`) enables all three methods. See [Configure Account Lockout](/getting-started/configuration#configure-account-lockout) for customization.
+The default unlock strategy (`both`) is Devise's, and covers the time-based and email routes. See [Configure Account Lockout](/getting-started/configuration#configure-account-lockout) for customization.
+
+The same Status row carries a **Lock Account** button for locking an account deliberately. An admin cannot lock their own account.
 
 ## Last-Admin Protection
 
@@ -101,14 +101,14 @@ Deleting a user removes their account but does not remove their contributions (r
 
 ## Authentication Providers
 
-Each user has an authentication provider shown as a badge:
+The Users table's **Type** column names each account's authentication provider as plain text — "Local User", "OIDC User", "LDAP User", "GITHUB User". The Edit User modal shows the same thing as a badge ("Local", or the provider upper-cased).
 
-| Badge | Provider | Password Management |
+| Type | Provider | Password Management |
 |-------|----------|-------------------|
 | Local | Email/password | Full password tools available |
 | OIDC | OpenID Connect (Okta, etc.) | No password tools — managed by identity provider |
 | LDAP | LDAP directory | No password tools — managed by directory |
-| GitHub | GitHub OAuth | No password tools — managed by GitHub |
+| GITHUB | GitHub OAuth | No password tools — managed by GitHub |
 
 ## Self-Service Password Reset
 
@@ -143,12 +143,12 @@ See [Configuration](/getting-started/configuration) for environment variable det
 
 ## API Tokens (Personal Access Tokens)
 
-Users can create Personal Access Tokens for programmatic API access from the **User Settings > API Tokens** tab.
+Users can create Personal Access Tokens for programmatic API access from the **API Tokens** page of their own account settings.
 
 ### Creating a Token
 
-1. Navigate to your **User Settings** page
-2. Select the **API Tokens** tab
+1. Open the avatar menu and choose **Profile**
+2. Pick **API Tokens** from the left-hand list
 3. Click **Create Token**
 4. Provide a name, select scopes (`read`, `write`, or `admin`), and set an expiration date
 5. Optionally add IP allowlist entries (CIDR notation) to restrict where the token can be used
@@ -169,7 +169,7 @@ Administrators can view other users' token counts in the Users table and revoke 
 
 - Maximum 20 tokens per user
 - Maximum lifetime of 365 days
-- Unused tokens are automatically revoked after 90 days
+- `rake api_tokens:revoke_idle` revokes tokens left unused past the configured idle period (90 days by default). A token that has never been used is not idle-revoked.
 
 See [API Authentication](/api/authentication) for usage details.
 
