@@ -19,18 +19,31 @@ This guide covers store patterns, composables, testing, plugins, and integration
 
 ## Architecture: 22 Vue Instances
 
-Vulcan has 22 separate Vue instances (one per page/pack file). All share ONE `createPinia()` instance via `createVulcanApp()` (Pinia creator's documented pattern for multi-app). On `turbolinks:before-visit`, all stores are reset via `$reset()` to prevent stale cache from the previous page.
+Every pack in `app/javascript/packs/` except `application.js` mounts one Vue
+instance — 22 of them. Navigation is plain full-page loads, so each instance is
+built from scratch on every request, inside a `DOMContentLoaded` listener.
+
+Five packs build their instance through `createVulcanApp()`, which holds a
+module-scoped Pinia and passes it to everything it creates:
 
 ```
-Pack file  ──→  createVulcanApp()  ──→  new Vue({ pinia: createPinia() })
+Pack file  ──→  createVulcanApp()  ──→  new Vue({ pinia: sharedPinia, router? })
                      │
-                     ├── Vue.use(PiniaVuePlugin)     (once globally)
-                     ├── Vue.use(BootstrapVue)
-                     ├── Vue.use(IconsPlugin)
-                     └── Vue.use(TurbolinksAdapter)
+                     ├── Vue.use(PiniaVuePlugin)
+                     ├── Vue.use(BootstrapVue, bvConfig)
+                     └── Vue.use(IconsPlugin)
 ```
 
-Packs that don't use stores still get Pinia installed — zero overhead (stores instantiate lazily on first `useStore()` call).
+That Pinia instance is **not** shared across packs, despite the
+`sharedPinia` name. `esbuild.config.js` sets `format: "iife"` and one entry
+point per pack, so each bundle carries its own copy of `createVulcanApp.js` and
+its own `createPinia()` result. A page loads several of those bundles at once
+(`application`, `navbar`, `toaster`, plus the page's pack), and `navbar.js`
+calls `createPinia()` for itself. So in practice store state is scoped to a
+single pack bundle: it never crosses from the navbar into the page app, and
+nothing survives a navigation.
+
+A pack that goes through the helper but uses no store still gets Pinia installed — zero overhead, since stores instantiate lazily on the first `useStore()` call.
 
 ---
 
@@ -436,34 +449,49 @@ beforeEach(() => {
 
 ## `createVulcanApp()` Helper
 
-All pack files use this shared helper:
+New Vue instances should be built with this shared helper. It is the single
+place that installs Pinia and BootstrapVue, and the only place that knows how a
+pack wires a router:
 
 ```javascript
 // app/javascript/lib/createVulcanApp.js
 import Vue from "vue";
-import TurbolinksAdapter from "vue-turbolinks";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { bvConfig } from "../config/bootstrapVueConfig";
 
 Vue.use(PiniaVuePlugin);
-Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue, bvConfig);
 Vue.use(IconsPlugin);
 
-export function createVulcanApp({ el, componentName, component, directives }) {
-  if (component) Vue.component(componentName, component);
+const sharedPinia = createPinia();
+
+export { sharedPinia };
+
+export function createVulcanApp({ el, componentName, component, directives, router }) {
+  if (component) {
+    Vue.component(componentName, component);
+  }
   if (directives) {
     Object.entries(directives).forEach(([name, dir]) => {
       Vue.directive(name, dir);
     });
   }
 
-  document.addEventListener("turbolinks:load", () => {
-    new Vue({ el, pinia: createPinia() });
-  });
+  const targetEl = document.querySelector(el);
+  if (!targetEl) return null;
+
+  const options = { el, pinia: sharedPinia };
+  if (router) {
+    options.router = router;
+  }
+
+  return new Vue(options);
 }
 ```
+
+The helper does not wait for the DOM itself — the pack owns that, and bails out
+by returning `null` if the mount element is absent from the page.
 
 ### Pack File Usage
 
@@ -472,13 +500,18 @@ import { createVulcanApp } from "../lib/createVulcanApp";
 import ComponentTriagePage from "../components/components/ComponentTriagePage.vue";
 import linkify from "v-linkify";
 
-createVulcanApp({
-  el: "#componenttriage",
-  componentName: "Componenttriage",
-  component: ComponentTriagePage,
-  directives: { linkified: linkify },
+document.addEventListener("DOMContentLoaded", () => {
+  createVulcanApp({
+    el: "#componenttriage",
+    componentName: "Componenttriage",
+    component: ComponentTriagePage,
+    directives: { linkified: linkify },
+  });
 });
 ```
+
+The remaining packs predate the helper and still call `new Vue()` directly,
+installing BootstrapVue from `bvConfig` themselves.
 
 ---
 
@@ -488,17 +521,18 @@ createVulcanApp({
 app/javascript/
 ├── stores/                     # Pinia stores (one per domain)
 │   ├── comments.js             # Comment fetch/cache/triage state
-│   ├── triage.js               # Triage workflow (future)
-│   └── preferences.js          # User UI preferences (future)
+│   ├── ruleSelection.js        # Rule multi-select state
+│   └── theme.js                # Light/dark colour mode
 ├── composables/                # Composition API composables
 │   ├── useCommentReactions.js  # Replaces ReactionToggleMixin
 │   ├── useCommentThread.js     # Thread expand/collapse/fetch
-│   └── useCommentTriage.js     # Triage form state + submit
+│   └── ...                     # One file per concern
+├── api/                        # ky-based HTTP wrappers, one per domain
 ├── lib/
 │   └── createVulcanApp.js      # Shared Vue instance factory
 ├── utils/
 │   └── normalizeComment.js     # Wire→camelCase comment row normalizer
-└── packs/                      # Entry points (use createVulcanApp)
+└── packs/                      # Entry points, one per page
 
 # The legacy mixins/ directory is GONE — every mixin was migrated to a
 # composable (ReactionToggleMixin → useCommentReactions, AlertMixin →
@@ -514,7 +548,7 @@ These patterns were verified by an 8-agent expert review (2026-06-04) and confir
 | Pattern | Why It's Correct | Do Not |
 |---------|-----------------|--------|
 | CSRF via ky `beforeRequest` hook | Reads meta tag per-request. FormMixin is backward-compat only — ky handles CSRF natively. | Remove FormMixin from components that also use direct ky calls (esbuild bundle isolation means each pack needs its own CSRF source) |
-| `$reset()` on `turbolinks:before-visit` | Prevents stale cache leaking across page navigations. Required for all Setup Stores (Pinia does not auto-generate `$reset` for them). | Remove the reset listener or skip `$reset()` implementation |
+| Hand-written `$reset()` on every Setup Store | Pinia does not auto-generate `$reset` for Setup Stores, so a store without one cannot be returned to a clean state. Specs rely on it, as does any in-page flow that has to drop a cache. | Skip the `$reset()` implementation because "page loads reset everything anyway" |
 | `setCacheEntry` replaces entire cache ref | `cache.value = { ...cache.value, [key]: value }` creates a new top-level object — correct for Vue 2.7 ref reactivity (replacing the value triggers watchers). | Optimize by mutating `cache.value[key]` directly — this breaks Vue 2 reactivity |
 | `normalizeComment` uses `??` (nullish coalescing) | Preserves legitimate falsy values (0, '', false). `||` would coerce them to defaults — data loss bug. | Switch to `||` for "simpler" fallbacks |
 
