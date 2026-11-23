@@ -12,16 +12,19 @@ Vulcan is a Rails-based web application designed for creating and managing Secur
 
 ## Technology Stack
 
+Exact versions live in `.ruby-version`, `Gemfile.lock` and `package.json` —
+those files are the source of truth, not this page.
+
 ### Backend
-- **Ruby 3.4.10** - Programming language
-- **Rails 8.1.3.1** - Web application framework
+- **Ruby 3.4** - Programming language
+- **Rails 8.1** - Web application framework
 - **PostgreSQL** - Primary database
 
 ### Frontend
-- **Vue 2.7.16** - Reactive UI framework
-- **Bootstrap 4.6.2** - CSS framework
-- **Bootstrap-Vue 2.23.1** - Vue Bootstrap components
-- **Turbolinks 5.2.0** - Page navigation optimization
+- **Vue 2.7** - Reactive UI framework
+- **Bootstrap 4.6** - CSS framework
+- **Bootstrap-Vue 2.23** - Vue Bootstrap components
+- **Pinia 2** - Store layer for the Vue instances that need one
 - **esbuild** - JavaScript bundling
 
 ### Testing
@@ -41,8 +44,10 @@ vulcan/
 │   ├── javascript/
 │   │   ├── components/   # Vue components
 │   │   ├── packs/       # Entry points for Vue apps
-│   │   ├── mixins/      # Shared Vue functionality
-│   │   └── store/       # Shared state management
+│   │   ├── stores/      # Pinia stores
+│   │   ├── composables/ # Shared Composition API logic
+│   │   ├── api/         # HTTP client wrappers
+│   │   └── utils/       # Pure helpers
 │   └── lib/
 │       └── xccdf/       # STIG/SRG XML parsing
 ├── config/              # Application configuration
@@ -53,35 +58,34 @@ vulcan/
 
 ## Vue.js Architecture
 
-Vulcan uses 16 JavaScript entry points — 14 Vue instances (one per page), a base application setup, and a global notification component:
+Each page gets its own Vue instance from its own pack file in
+`app/javascript/packs/`. `esbuild.config.js` is the authoritative list of entry
+points: every pack plus `bootstrap-vue.scss`. All packs but `application.js`
+mount a Vue instance; `application.js` only starts Rails UJS, ActiveStorage and
+the ActionCable channels.
 
 ```javascript
 // Each pack file creates its own Vue instance
 // Example: app/javascript/packs/projects.js
-new Vue({
-    el: '#projects-app',
-    render: h => h(ProjectsIndex),
-    store
+Vue.component("Projects", Projects);
+
+document.addEventListener("DOMContentLoaded", () => {
+  new Vue({
+    el: "#Projects",
+  });
 });
 ```
 
-### Vue Instances by Page
-- `application.js` - Base application with Turbolinks/Rails UJS setup
-- `login.js` - Login page
-- `navbar.js` - Global navigation
-- `project.js` - Single project view
-- `project_component.js` - Single component editing
-- `project_components.js` - Component management
-- `projects.js` - Projects listing
-- `released_component.js` - Released component view
-- `rules.js` - Rule management
-- `security_requirements_guides.js` - SRG listing and management
-- `srg.js` - Single SRG view
-- `stig.js` - Single STIG view
-- `stigs.js` - STIGs listing
-- `toaster.js` - Global notifications
-- `user_profile.js` - User profile management
-- `users.js` - User administration
+A page is a plain full-page load: the layout includes `application`, `navbar`
+and `toaster`, and the view adds its own pack with `javascript_include_tag`.
+Four pack files — `project_component.js`, `rules.js`, `project_triage.js` and
+`component_triage.js` — additionally install `vue-router` in `hash` mode
+(`app/javascript/router/`), so the component editor and the triage workspaces
+route within one page without a server round trip.
+
+See [State Management](state-management.md) for how Pinia is wired into these
+instances, and [Frontend Architecture](frontend-architecture.md) for the layer
+rules.
 
 ### Benefits of Multiple Vue Instances
 - Gradual migration path
@@ -126,7 +130,17 @@ Review belongs_to :user
 
 ## API Design
 
-Vulcan is not a public REST API. The only external-facing API endpoint is `GET /api/search/global`, used internally by the navbar search. All other data is served via standard Rails HTML responses with JSON used for Vue component data.
+Vulcan serves two kinds of JSON. Most Vue components read JSON rendered by the
+same controllers that serve the HTML pages. Alongside that there is a dedicated
+`/api` namespace (`app/controllers/api/`, routed in `config/routes.rb`) whose
+controllers inherit from `Api::BaseController` — JSON-only error bodies,
+401 instead of a login redirect — and which accepts either a session cookie or
+a personal API token.
+
+The whole REST surface is specified in `doc/openapi/` (multi-file, bundled to
+`doc/openapi.yaml`) and served at `/openapi.yaml` and `/openapi.json`. See
+[API Documentation](api-docs.md) for how the spec is built, linted and
+contract-tested.
 
 ## Security Architecture
 
@@ -159,7 +173,6 @@ See [Authorization Architecture](authorization.md) for details.
 - Database query optimization with includes/joins
 - Jbuilder collection caching for JSON views
 - Composite indexes for severity count queries
-- Turbolinks for faster page transitions
 - Docker multi-stage builds; UBI9 minimal runtime with `MALLOC_ARENA_MAX=2` and Ruby YJIT enabled
 
 ### Monitoring
@@ -174,7 +187,7 @@ See [Authorization Architecture](authorization.md) for details.
 # Multi-stage build for optimization
 
 # Base stage - shared runtime foundation
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal AS base   # tag + digest pinned in the real Dockerfile
 
 # Build-base stage - compile Ruby 3.4, install build tooling, and install Node.js
 FROM base AS build-base
@@ -248,7 +261,7 @@ The export system uses a service-based architecture with modes and formatters.
 **Key files:**
 - `app/services/export/` — service-based export pipeline (Registry, Base, modes, formatters)
 - `app/services/export/formatters/excel_formatter.rb` — caxlsx-based Excel with locked sections
-- `app/helpers/export_helper.rb` — legacy XCCDF/InSpec export (DISA format)
+- `app/services/export/formatters/xccdf_formatter.rb`, `inspec_formatter.rb` — DISA XCCDF and InSpec output
 - `app/constants/export_constants.rb` — column definitions, headers, defaults
 - `app/javascript/constants/csvColumns.js` — frontend column picker definitions
 - `app/javascript/components/shared/ExportModal.vue` — mode-first export UI
@@ -292,7 +305,6 @@ The method uses PostgreSQL `ILIKE` to find candidate rules, then applies the reg
 - Incremental page-by-page migration
 - Remove Bootstrap-Vue dependency
 - Native Bootstrap 5 integration
-- Remove Turbolinks
 
 ### Rails Improvements
 - GraphQL API consideration
