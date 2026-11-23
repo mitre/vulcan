@@ -110,6 +110,18 @@ module Rack
       reactions_user.call(req) if req.get?
     end
 
+    ### Throttle CSRF token issuance ###
+    # GET /api/auth/csrf needs no sign-in and writes session[:_csrf_token],
+    # which under the ActiveRecord session store inserts a sessions row per
+    # caller — so an unauthenticated client can grow that table at will. A
+    # legitimate frontend fetches the token once per page load and again
+    # after each login and logout, so it meters at the reaction-POST rate
+    # (one a second) rather than the login rate: far more headroom than the
+    # SPA needs, while the row-per-call surface stays bounded.
+    throttle('csrf/ip', limit: 60, period: 60.seconds) do |req|
+      req.ip if req.get? && req.path == '/api/auth/csrf'
+    end
+
     ### Throttle API token requests ###
     throttle('api_token/ip', limit: 300, period: 60.seconds) do |req|
       req.ip if req.env['HTTP_AUTHORIZATION']&.start_with?('Token ')

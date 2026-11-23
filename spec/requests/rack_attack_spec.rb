@@ -110,6 +110,50 @@ RSpec.describe 'Rack::Attack throttling' do
     end
   end
 
+  # GET /api/auth/csrf needs no sign-in and writes session[:_csrf_token], so
+  # every call inserts a sessions row under the ActiveRecord session store.
+  # Unmetered, that is an unauthenticated storage-growth surface.
+  describe 'CSRF token issuance throttling on GET /api/auth/csrf' do
+    it 'allows the first 60 token requests in a minute' do
+      test_ip = "10.30.#{rand(1..254)}.#{rand(1..254)}"
+
+      freeze_time do
+        60.times do |i|
+          get '/api/auth/csrf', headers: { 'REMOTE_ADDR' => test_ip }, as: :json
+          expect(response.status).not_to eq(429), "Request #{i + 1} was throttled unexpectedly"
+        end
+      end
+    end
+
+    it 'throttles the 61st token request within a minute' do
+      test_ip = "10.40.#{rand(1..254)}.#{rand(1..254)}"
+
+      freeze_time do
+        60.times do
+          get '/api/auth/csrf', headers: { 'REMOTE_ADDR' => test_ip }, as: :json
+        end
+
+        get '/api/auth/csrf', headers: { 'REMOTE_ADDR' => test_ip }, as: :json
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+      end
+    end
+
+    it 'meters per IP, so one caller cannot lock another out' do
+      exhausted_ip = "10.50.#{rand(1..254)}.#{rand(1..254)}"
+
+      freeze_time do
+        61.times do
+          get '/api/auth/csrf', headers: { 'REMOTE_ADDR' => exhausted_ip }, as: :json
+        end
+        expect(response).to have_http_status(:too_many_requests)
+
+        get '/api/auth/csrf', headers: { 'REMOTE_ADDR' => "10.60.#{rand(1..254)}.#{rand(1..254)}" }, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
   describe 'comment-action throttling on POST /rules/:id/reviews' do
     let_it_be(:srg) do
       srg_xml = Rails.root.join('db/seeds/srgs/U_Web_Server_SRG_V4R4_Manual-xccdf.xml').read
