@@ -653,7 +653,7 @@ Based on source code analysis, the following clarifications apply:
 |--------------|---------------------|----------------------|-----------------|
 | **Session Timeout** | 10 minutes required | Defaults to 1 hour | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` (or `600`) |
 | **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
-| **CSRF Protection** | Enabled | `protect_from_forgery with: :exception` in `ApplicationController`; separately served frontends get the token from `GET /api/auth/csrf` | ✅ No action needed |
+| **CSRF Protection** | Enabled | `protect_from_forgery with: :exception` in `ApplicationController`; same-origin frontends without the Rails layout get the token from `GET /api/auth/csrf` | ✅ No action needed |
 | **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |
 | **Log Rotation** | External required | Logs to stdout | ⚠️ **Must configure** log management system |
 
