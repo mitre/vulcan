@@ -1,0 +1,19 @@
+# Tool versions for development and CI. Each version has one source, the file
+# the ecosystem already reads, and mise.lock records the exact release and its
+# checksums. The Dockerfile pins the same releases as build arguments, checked
+# by spec/config/toolchain_version_consistency_spec.rb:
+#   Ruby  - .ruby-version (the Gemfile's `ruby` line must match it)
+#   Node  - .nvmrc (the Active LTS line; mise.lock pins the release, moved
+#           with `mise lock --bump node`)
+#   Yarn  - packageManager in package.json
+# Setup: install mise (https://mise.jdx.dev), then `mise trust && mise install`.
+min_version = "2026.11.5"
+
+[settings]
+idiomatic_version_file_enable_tools = ["ruby", "node", "yarn"]
+lockfile = true
+
+# Yarn's release archives through aqua, so mise.lock records their checksums;
+# the registry default for yarn records none.
+[tool_alias]
+yarn = "aqua:yarnpkg/berry"

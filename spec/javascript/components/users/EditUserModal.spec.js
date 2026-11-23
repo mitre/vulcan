@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { localVue, captureVulcanToast } from "@test/testHelper";
 import EditUserModal from "@/components/users/EditUserModal.vue";
-import { adminRevokeToken as apiAdminRevoke } from "@/api/tokensApi";
+import { adminRevokeToken as apiAdminRevoke, adminListTokens } from "@/api/tokensApi";
 import {
   lockUser,
   unlockUser,
@@ -227,6 +227,52 @@ describe("EditUserModal", () => {
       await wrapper.vm.generateResetLink();
 
       expect(wrapper.vm.generatedResetUrl).toBe(resetUrl);
+    });
+  });
+
+  describe("copy reset link", () => {
+    // Requirement: "Copied to clipboard" only after the link was copied; when it
+    // could not be copied (plain HTTP has no clipboard API, or it was refused,
+    // and the fallback failed) the admin is told to copy it manually instead.
+    const url = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      delete document.execCommand;
+    });
+
+    it("confirms the copy once the link is on the clipboard", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      vi.stubGlobal("navigator", { clipboard: { writeText }, userAgent: navigator.userAgent });
+      mountModal();
+      await wrapper.setData({ generatedResetUrl: url });
+
+      const toast = await captureVulcanToast(() => wrapper.vm.copyResetUrl(), wrapper);
+
+      expect(writeText).toHaveBeenCalledWith(url);
+      expect(toast).toMatchObject({
+        title: "Copy",
+        variant: "success",
+        message: "Copied to clipboard",
+      });
+    });
+
+    it("warns, and does not claim success, when the link could not be copied", async () => {
+      vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
+      document.execCommand = vi.fn(() => false);
+      mountModal();
+      await wrapper.setData({ generatedResetUrl: url });
+      const seen = [];
+      const listener = (event) => seen.push(event.detail);
+      document.addEventListener("vulcan:toast", listener);
+
+      try {
+        await captureVulcanToast(() => wrapper.vm.copyResetUrl(), wrapper);
+      } finally {
+        document.removeEventListener("vulcan:toast", listener);
+      }
+
+      expect(seen).toEqual([expect.objectContaining({ title: "Copy failed", variant: "warning" })]);
     });
   });
 
@@ -522,6 +568,21 @@ describe("EditUserModal", () => {
       await wrapper.vm.confirmAdminRevoke();
 
       expect(apiAdminRevoke).toHaveBeenCalledWith(7, "compromised");
+    });
+
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it("confirmAdminRevoke resolves once the user's token list has reloaded", async () => {
+      mountModal();
+      await wrapper.setData({ revokeTokenTarget: { id: 7 }, revokeComment: "compromised" });
+      expect(wrapper.vm.localUser).toBeTruthy();
+      const remaining = [{ id: 8, name: "ci" }];
+      adminListTokens.mockReturnValueOnce(later({ data: { personal_access_tokens: remaining } }));
+
+      await wrapper.vm.confirmAdminRevoke();
+
+      expect(wrapper.vm.userTokens).toEqual(remaining);
     });
   });
 });

@@ -26,22 +26,26 @@ fi
 
 # Check if we should use production or development template
 echo "Which environment are you setting up?"
-echo "1) Development (with test Okta)"
+echo "1) Development"
 echo "2) Production"
-read -p "Enter choice (1 or 2): " ENV_CHOICE
+read -r -p "Enter choice (1 or 2): " ENV_CHOICE
 
+# Docker Compose reads only .env, so the development .env combines the base
+# template (database, ports) with the development settings.
 if [ "$ENV_CHOICE" = "1" ]; then
-    TEMPLATE=".env.example"
-    echo "Using development template..."
+    TEMPLATES=(".env.example" ".env.development.example")
+    echo "Using development templates..."
 else
-    TEMPLATE=".env.production.example"
+    TEMPLATES=(".env.production.example")
     echo "Using production template..."
 fi
 
-if [ ! -f "$TEMPLATE" ]; then
-    echo "❌ ERROR: Template file $TEMPLATE not found!"
-    exit 1
-fi
+for TEMPLATE in "${TEMPLATES[@]}"; do
+    if [ ! -f "$TEMPLATE" ]; then
+        echo "❌ ERROR: Template file $TEMPLATE not found!"
+        exit 1
+    fi
+done
 
 # Generate secure secrets
 echo "Generating secure secrets..."
@@ -60,7 +64,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         CIPHER_SALT=*)       echo "CIPHER_SALT=$CIPHER_SALT" ;;
         *)                   echo "$line" ;;
     esac
-done < "$TEMPLATE" > .env
+done < <(cat "${TEMPLATES[@]}") > .env
 
 # Set secure permissions
 chmod 600 .env
@@ -70,7 +74,7 @@ echo "✅ SUCCESS: .env file created with secure secrets!"
 echo
 echo "Next steps:"
 if [ "$ENV_CHOICE" = "1" ]; then
-    echo "1. The test Okta credentials are already configured"
+    echo "1. To sign in with OIDC, set VULCAN_ENABLE_OIDC=true and the VULCAN_OIDC_* values in .env"
     echo "2. Start the application with: docker compose up"
     echo "3. Access Vulcan at: http://localhost:3000"
 else

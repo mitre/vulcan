@@ -6,8 +6,7 @@ This guide walks through setting up a local Vulcan development environment.
 
 ### Required Software
 
-- **Ruby 3.4.13** (use rbenv or rvm for version management)
-- **Node.js 24 LTS** and **Yarn** package manager
+- **[mise](https://mise.jdx.dev)**, which installs the Ruby, Node.js and Yarn versions the project pins
 - **PostgreSQL 18** database server
 - **Git** version control
 
@@ -29,6 +28,13 @@ cd vulcan
 
 ### 2. Install Dependencies
 
+#### Toolchain
+```bash
+# Installs Ruby, Node.js and Yarn at the versions in mise.lock
+mise trust
+mise install
+```
+
 #### Ruby Dependencies
 ```bash
 # Install bundler
@@ -40,10 +46,6 @@ bundle install
 
 #### JavaScript Dependencies
 ```bash
-# Install yarn if not present
-npm install -g yarn
-
-# Install packages
 yarn install
 ```
 
@@ -117,38 +119,27 @@ Visit http://localhost:3000
 
 ## Detailed Setup
 
-### Ruby Environment
+### Toolchain
 
-#### Using rbenv
+mise reads each version from the file its ecosystem already uses and records the exact release, with checksums, in `mise.lock`:
 
-```bash
-# Install rbenv
-git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+| Tool | Version source | Read by |
+|------|----------------|---------|
+| Ruby | `.ruby-version` (the Gemfile's `ruby` line must match) | mise |
+| Node.js | `.nvmrc` (release line, e.g. `24`) | mise; Heroku reads `engines.node` in `package.json` |
+| Yarn | `packageManager` in `package.json` | mise, Yarn |
 
-# Install ruby-build
-git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+`mise install` and `mise exec` keep `mise.lock` up to date (`lockfile = true` in `mise.toml`); commit it with the version change. CI installs with `mise install --locked`, so a version missing from the lock fails the build.
 
-# Install Ruby
-rbenv install 3.4.13
-rbenv local 3.4.13
-```
+By default mise installs a prebuilt Ruby that carries its own OpenSSL. To compile Ruby against the system OpenSSL instead, for example on a FIPS-enabled host, set `MISE_RUBY_COMPILE=true` before `mise install`.
 
-#### Using rvm
+#### Changing a version
 
-```bash
-# Install RVM
-\curl -sSL https://get.rvm.io | bash -s stable
+1. Edit the version source above (`.ruby-version` and the Gemfile's `ruby` line, `.nvmrc`, or `packageManager`). For a newer Node.js release on the same line, run `mise lock --bump node`.
+2. Run `mise install`, which updates `mise.lock`.
+3. Update the matching build arguments in `Dockerfile` (`RUBY_VERSION`/`RUBY_SHA256`, `NODE_VERSION`/`NODE_SHA256_*`, `YARNPKG_VERSION`/`YARNPKG_SHA256`) and `docker-bake.hcl`, copying the checksums from `mise.lock`. The image compiles Ruby itself so that it links the base image's OpenSSL.
 
-# Install Ruby
-rvm install 3.4.13
-rvm use 3.4.13
-
-# Create gemset (optional)
-rvm gemset create vulcan
-rvm use 3.4.13@vulcan
-```
+`spec/config/toolchain_version_consistency_spec.rb` fails until every pin matches `mise.lock`.
 
 ### Database Configuration
 
@@ -173,29 +164,25 @@ Database names follow Rails convention: `vulcan_development`, `vulcan_test`, `vu
 
 ### Environment Variables
 
-Create `.env.development`:
+Settings live in three files, each copied from its `.example` (`bin/setup` copies any that are missing):
+
+| File | Loaded in | Holds |
+|------|-----------|-------|
+| `.env` | every environment, and by Docker Compose | Database connection and ports |
+| `.env.development` | development | Application settings: secrets, login options, OIDC, banner, SMTP |
+| `.env.test` | test | Only what CI's backend job sets (OIDC, optionally LDAP); everything else stays at the application default |
 
 ```bash
-# Database
-DATABASE_URL=postgresql://vulcan_dev:password@localhost/vulcan_development
-
-# Application
-SECRET_KEY_BASE=development_secret_key_minimum_30_characters_long
-RAILS_ENV=development
-
-# Email (optional)
-VULCAN_ENABLE_SMTP=false
-VULCAN_CONTACT_EMAIL=dev@localhost  # Also used as default SMTP username when SMTP enabled
-
-# Authentication (optional)
-VULCAN_ENABLE_USER_REGISTRATION=true
-VULCAN_ENABLE_LOCAL_LOGIN=true
-VULCAN_SESSION_TIMEOUT=1h    # Accepts: 30s, 15m, 1h, or plain numbers
-
-# Development features
-RAILS_LOG_LEVEL=debug
-VULCAN_WELCOME_TEXT="Development Environment"
+cp .env.example .env
+cp .env.development.example .env.development
+cp .env.test.example .env.test
 ```
+
+Rails (dotenv-rails) loads `.env.<environment>.local`, then `.env.local` (skipped in test), then `.env.<environment>`, then `.env`. The first file to set a variable wins, and a variable already set in the shell wins over every file, so `.env.development` and `.env.test` build on `.env` and override it. Put personal development overrides in `.env.local`; the test suite never reads it. All `.env*` files are ignored by git.
+
+To run the OIDC discovery specs against a real identity provider, set the issuer, client ID and secret of a test OIDC application in `.env.test`; with the placeholder issuer they skip.
+
+**Upgrading from a single `.env`:** it keeps working, but it is also loaded by the test suite. To split it, move everything except the database and port settings into `.env.development`, and copy `.env.test.example` to `.env.test`.
 
 ### Authentication Setup
 
@@ -355,7 +342,7 @@ Recommended extensions:
 
 ### RubyMine
 
-1. Set Ruby SDK to 3.4.13
+1. Set Ruby SDK to 3.4.12
 2. Configure Rails project
 3. Enable RuboCop inspection
 4. Set JavaScript version to ES6+
@@ -395,8 +382,8 @@ rails tmp:clear
 yarn cache clean
 
 # Reinstall dependencies
-rm -rf node_modules yarn.lock
-yarn install
+rm -rf node_modules
+yarn install --immutable
 
 # Rebuild
 yarn build
@@ -557,7 +544,7 @@ bundle exec bundler-audit check --update
 bundle exec brakeman
 
 # JavaScript audit
-yarn audit
+yarn npm audit --all --recursive
 ```
 
 ## Useful Commands

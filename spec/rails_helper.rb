@@ -48,7 +48,7 @@ unless assets_dir.exist? && assets_dir.glob('*.js').any?
 
     Tests require compiled JavaScript assets. Please run:
 
-        yarn install --frozen-lockfile && yarn build
+        yarn install --immutable && yarn build
 
     Or run the full setup:
 
