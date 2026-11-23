@@ -4,7 +4,13 @@ When running multiple MITRE projects simultaneously, assign unique ports to avoi
 
 ## Default Behavior
 
-Every project defaults to PostgreSQL on port 5432 and the app on port 3000. This works out of the box for single-project development. Only set custom ports if you run multiple projects at once.
+`config/database.yml` defaults to port 5432 and Puma to 3000, so a local
+PostgreSQL install needs no port configuration at all.
+
+The dev Docker database is the exception: `docker-compose.dev.yml` publishes
+`${POSTGRES_PORT:-5435}:5432`, so it lands on host port **5435** while Rails
+still looks for 5432. Using that container therefore requires
+`DATABASE_PORT=5435` in `.env` — which is why Vulcan's row below reads 5435.
 
 ## Port Assignments
 
@@ -44,12 +50,13 @@ All MITRE projects follow `UPPERCASE_WITH_UNDERSCORES` using full descriptive wo
 | `DATABASE_HOST` | `database.yml` | PostgreSQL host (default: 127.0.0.1) |
 | `DATABASE_GSSENCMODE` | `database.yml` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) |
 | `DATABASE_URL` | `database.yml` | Full connection string (12-factor, takes precedence in production) |
-| `POSTGRES_PORT` | `docker-compose.yml` | Docker host-side port mapping (must match DATABASE_PORT) |
+| `POSTGRES_PORT` | `docker-compose.dev.yml` | Host-side port mapping for the dev database, default 5435 (must match DATABASE_PORT) |
 | `POSTGRES_USER` | `docker-compose.yml` | Docker PostgreSQL init: username to create |
 | `POSTGRES_PASSWORD` | `docker-compose.yml` | Docker PostgreSQL init: password to set |
 | `POSTGRES_DB` | `docker-compose.yml` | Docker PostgreSQL init: database to create |
-| `PORT` | `Procfile.dev` | App server (Puma/Rails) listen port |
+| `PORT` | `bin/dev`, `config/puma.rb` | App server listen port. `bin/dev` walks upward from it if the port is taken |
 | `DATABASE_NAME` | `database.yml` | Override default database name |
+| `VULCAN_PORT` | `docker-compose.yml`, `docker-compose.dev.yml` | Host-side port mapping for the web container |
 
 **Why two port variables?** `DATABASE_PORT` is what Rails uses to connect. `POSTGRES_PORT` is what Docker uses to map the container's internal port 5432 to the host. Set both to the same value in `.env`.
 

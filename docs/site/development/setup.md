@@ -58,6 +58,10 @@ docker compose -f docker-compose.dev.yml up db -d
 # Wait for healthy status
 docker compose ps db   # should show "healthy"
 
+# The container publishes host port 5435, but database.yml defaults to 5432,
+# so point Rails at it before preparing the database.
+echo "DATABASE_PORT=5435" >> .env
+
 # Create and migrate development database
 bin/rails db:prepare
 
