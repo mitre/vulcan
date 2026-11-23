@@ -21,29 +21,11 @@ import { localVue } from "@test/testHelper";
 import CommentThread from "@/components/shared/CommentThread.vue";
 import { getReviewResponses } from "@/api/reviewsApi";
 
-vi.mock("@/api/baseApi", () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-    defaults: { headers: { common: {} } },
-  },
-}));
-
-vi.mock("@/api/componentsApi", () => ({
-  getComments: vi.fn(),
-}));
-
-vi.mock("@/api/reviewsApi", () => ({
-  getReviewResponses: vi.fn(),
-  createRuleReview: vi.fn(),
-  createComponentReview: vi.fn(),
-  triageReview: vi.fn(),
-  bulkTriageReviews: vi.fn(),
-  toggleReaction: vi.fn(),
-}));
+vi.mock("@/api/baseApi", async () => (await import("@test/support/apiMocks")).baseApi());
+vi.mock("@/api/componentsApi", async () =>
+  (await import("@test/support/apiMocks")).componentsApi(),
+);
+vi.mock("@/api/reviewsApi", async () => (await import("@test/support/apiMocks")).reviewsApi());
 
 // One reply per parent, named after its parent so the rendered text says
 // which thread is on screen.
