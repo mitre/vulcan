@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ref, nextTick } from "vue";
 import { setActivePinia, createPinia } from "pinia";
 import { useCommentThread } from "@/composables/useCommentThread";
 import { getReviewResponses } from "@/api/reviewsApi";
@@ -33,7 +34,7 @@ describe("useCommentThread", () => {
   });
 
   it("returns reactive state and methods", () => {
-    const thread = useCommentThread(38, 42);
+    const thread = useCommentThread(42);
     expect(thread.expanded.value).toBe(false);
     expect(thread.replies.value).toEqual([]);
     expect(thread.loaded.value).toBe(false);
@@ -49,7 +50,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(38, 42);
+    const thread = useCommentThread(42);
     await thread.toggle();
 
     expect(thread.expanded.value).toBe(true);
@@ -63,7 +64,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(38, 42);
+    const thread = useCommentThread(42);
     await thread.toggle();
     expect(thread.expanded.value).toBe(true);
 
@@ -77,7 +78,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(38, 42);
+    const thread = useCommentThread(42);
     await thread.toggle();
     expect(getReviewResponses).toHaveBeenCalledTimes(1);
 
@@ -88,10 +89,95 @@ describe("useCommentThread", () => {
   it("sets loadError on fetch failure", async () => {
     getReviewResponses.mockRejectedValue(new Error("boom"));
 
-    const thread = useCommentThread(38, 42);
+    const thread = useCommentThread(42);
     await thread.fetch();
 
     expect(thread.loadError.value).toBe(true);
     expect(thread.loading.value).toBe(false);
+  });
+
+  // REQUIREMENT: the thread belongs to whichever parent the source names NOW.
+  // Hosts reuse one thread instance across comments (the triage split view
+  // renders a single CommentThread for whatever comment is active), so a
+  // parent captured at call time would pin every later fetch, cache read and
+  // invalidation to the first parent — one comment's replies shown under
+  // another comment.
+  describe("following a reactive parent review id", () => {
+    it("fetches the id the source holds now, not the one it was created with", async () => {
+      getReviewResponses.mockResolvedValue({ data: { rows: [] } });
+      const parentReviewId = ref(42);
+
+      const thread = useCommentThread(parentReviewId);
+      parentReviewId.value = 43;
+      await nextTick();
+      await thread.fetch();
+
+      expect(getReviewResponses).toHaveBeenCalledWith(43);
+      expect(getReviewResponses).not.toHaveBeenCalledWith(42);
+    });
+
+    it("accepts a getter source (how components pass a prop)", async () => {
+      getReviewResponses.mockResolvedValue({ data: { rows: [] } });
+      let current = 42;
+
+      const thread = useCommentThread(() => current);
+      current = 43;
+      await thread.fetch();
+
+      expect(getReviewResponses).toHaveBeenCalledWith(43);
+    });
+
+    it("drops the previous parent's replies when the source changes", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7, comment: "reply to 42" }] },
+      });
+      const parentReviewId = ref(42);
+
+      const thread = useCommentThread(parentReviewId);
+      await thread.toggle();
+      expect(thread.replies.value).toHaveLength(1);
+
+      parentReviewId.value = 43;
+      await nextTick();
+
+      expect(thread.replies.value).toEqual([]);
+      expect(thread.loaded.value).toBe(false);
+    });
+
+    it("discards an in-flight response for a parent that is no longer current", async () => {
+      let resolveStale;
+      getReviewResponses.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStale = resolve;
+          }),
+      );
+      const parentReviewId = ref(42);
+
+      const thread = useCommentThread(parentReviewId);
+      const pending = thread.fetch();
+      parentReviewId.value = 43;
+      await nextTick();
+      resolveStale({ data: { rows: [{ id: 7, comment: "reply to 42" }] } });
+      await pending;
+
+      expect(thread.replies.value).toEqual([]);
+      expect(thread.loaded.value).toBe(false);
+      expect(thread.loading.value).toBe(false);
+    });
+
+    it("refresh invalidates and refetches the CURRENT parent", async () => {
+      getReviewResponses.mockResolvedValue({ data: { rows: [{ id: 7, comment: "reply" }] } });
+      const parentReviewId = ref(42);
+
+      const thread = useCommentThread(parentReviewId);
+      await thread.toggle();
+      parentReviewId.value = 43;
+      await nextTick();
+      thread.expanded.value = true;
+      await thread.refresh();
+
+      expect(getReviewResponses).toHaveBeenLastCalledWith(43);
+    });
   });
 });
