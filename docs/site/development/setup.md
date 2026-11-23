@@ -342,7 +342,7 @@ Recommended extensions:
 
 ### RubyMine
 
-1. Set Ruby SDK to 3.4.12
+1. Set Ruby SDK to 3.4.13
 2. Configure Rails project
 3. Enable RuboCop inspection
 4. Set JavaScript version to ES6+
