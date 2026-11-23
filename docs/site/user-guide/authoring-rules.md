@@ -59,10 +59,10 @@ Each rule maps to an SRG requirement. Click a rule in the left navigator to edit
 When one rule's fix also satisfies another requirement:
 
 1. Open the satisfying rule
-2. Click **Satisfies** in the toolbar
+2. Click **Satisfies** in the toolbar to open the **Also Satisfies** picker
 3. Search for and select the satisfied rule(s)
 
-Satisfied rules automatically inherit the satisfying rule's check and fix text.
+At export, a satisfied rule's Check and Fix are filled from the rule that satisfies it, so the two never disagree in the deliverable. The exception is **Applicable - Does Not Meet**: those rows export with Check and Fix blank regardless.
 
 ### 5. Review and Lock
 
