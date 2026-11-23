@@ -66,15 +66,17 @@ yarn docs:preview  # Preview production build
 
 ## 🛠️ Technology Stack
 
+Exact versions are pinned in `.ruby-version`, `Gemfile.lock` and `package.json` — treat those as the source of truth.
+
 ### Core Framework
-- **Ruby 3.4.10** with **Rails 8.1.3.1**
+- **Ruby 3.4** with **Rails 8.1**
 - **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
-- **Vue 2.7.16** (separate instance per page — no shared SPA)
-- **Bootstrap 4.6.2** with Bootstrap-Vue 2.23.1
-- **Turbolinks 5.2.0** for navigation optimization
+- **Vue 2.7** (separate instance per page — no shared SPA, no Turbolinks/Turbo)
+- **Bootstrap 4** with **Bootstrap-Vue 2**
+- **vue-router 3** in hash mode for in-page routing within the component editor and triage views
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
 ### Testing & Quality
@@ -266,11 +268,10 @@ We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTIN
 
 ## 📈 Roadmap
 
-### Upcoming Features (v2.3+)
+### Upcoming Features
 
 - **Vue 3 Migration**: Modernize frontend framework
 - **Bootstrap 5 Upgrade**: Update UI components
-- **Turbolinks Removal**: Simplify navigation architecture
 - **API v2**: Enhanced REST API with GraphQL support
 - **Multi-tenancy**: Support for multiple organizations
 - **Advanced Reporting**: Custom dashboards and metrics
