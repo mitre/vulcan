@@ -22,14 +22,15 @@ This is different from [Bulk Triage](./bulk-triage):
 
 ## How to use
 
-Merge is admin-only. The button appears in the bulk-triage bar when an
-admin selects two or more comments.
+Merge is admin-only. Admins see a **Merge** button in the bulk-triage
+bar as soon as anything is selected; it stays disabled until two or more
+comments are selected.
 
 1. **Select 2+ comments by the same commenter** in either the table view
    or the by-requirement accordion (same component, same author).
-2. In the bulk-triage bar, click **Merge…**. The Merge Comments modal
-   opens with a side-by-side preview of every selected comment showing
-   rule, author, posted date, and a preview of the body.
+2. In the bulk-triage bar, click **Merge**. The **Merge comments** modal
+   opens listing every selected comment with its rule, author, posted
+   date, and a truncated preview of the body.
 3. **Pick the survivor.** The radio button defaults to the
    oldest-posted comment (Zendesk convention). Pick any of the listed
    comments to make it the survivor instead.
