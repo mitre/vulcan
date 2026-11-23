@@ -55,7 +55,7 @@ Tokens can optionally restrict access by IP address or CIDR range. If configured
 
 - **Maximum lifetime**: 365 days
 - **Maximum per user**: 20 tokens
-- **Idle revocation**: tokens unused for 90 days are auto-revoked via `rake api_tokens:revoke_idle`
+- **Idle revocation**: `rake api_tokens:revoke_idle` revokes tokens that have gone unused past the configured idle period (90 days by default). A token that has never been used is not idle-revoked — only one with a recorded last-used date.
 - **Expired revocation**: tokens past expiry are cleaned up via `rake api_tokens:revoke_expired`
 - **Prefix**: all tokens start with `vulcan_` for secret-scanner detection
 
@@ -65,29 +65,43 @@ Token-authenticated requests bypass CSRF verification. Session-authenticated req
 
 ## Authentication Errors
 
+Every authentication and authorization failure is an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+problem details document served as `application/problem+json`. See
+[API Errors](./errors) for the full catalogue.
+
 ### 401 Unauthorized
 
 Missing, invalid, expired, or revoked token:
 
 ```json
 {
-  "error": "Invalid or expired API token"
+  "type": "/docs/api/errors#invalid_token",
+  "title": "Invalid or expired API token",
+  "status": 401,
+  "detail": "The Authorization header carried a token that does not match any active personal access token. It may be revoked, expired, or mistyped.",
+  "how_to_authenticate": { "session": "...", "token": "..." }
 }
 ```
 
 ### 403 Forbidden
 
-Valid token but insufficient scope or IP not in allowlist:
+Valid token but insufficient scope, or an IP outside the allowlist:
 
 ```json
 {
-  "error": "Insufficient token scope for this action"
+  "type": "/docs/api/errors#insufficient_token_scope",
+  "title": "Insufficient token scope",
+  "status": 403,
+  "detail": "This request requires the write scope, and the token does not grant it."
 }
 ```
 
 ```json
 {
-  "error": "IP address not in token allowlist"
+  "type": "/docs/api/errors#ip_not_allowed",
+  "title": "IP address not allowed",
+  "status": 403,
+  "detail": "The request came from an IP address outside this token's allowlist."
 }
 ```
 
@@ -127,10 +141,13 @@ Returns the raw token in the response body (show-once):
   "personal_access_token": {
     "id": 1,
     "name": "CI/CD Token",
-    "scopes": ["read", "write"],
     "token_prefix": "vulcan_a",
+    "scopes": ["read", "write"],
     "expires_at": "2027-01-01",
-    "last_used_at": null
+    "last_used_at": null,
+    "revoked_at": null,
+    "allowed_ips": ["10.0.0.0/8"],
+    "created_at": "2026-01-01T00:00:00.000Z"
   }
 }
 ```
