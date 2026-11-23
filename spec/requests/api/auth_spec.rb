@@ -214,6 +214,20 @@ RSpec.describe 'Api::Auth' do
         expect(response.parsed_body['id']).to eq(user.id)
       end
 
+      # A client that posts JSON with no Accept header (or Accept: */*)
+      # resolves to the HTML format, and the devise-security callbacks act on
+      # exactly that format: they look the signed-in user up, so the timed-out
+      # session's fetch hook signs the caller out and throws, and the login is
+      # answered by the failure app instead of establishing a session. The
+      # example above sends `as: :json`, which sets Accept and hides this.
+      it 'signs in again on the first POST /api/auth/login sent without an Accept header' do
+        post '/api/auth/login', params: credentials.to_json,
+                                headers: { 'CONTENT_TYPE' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['id']).to eq(user.id)
+      end
+
       it 'signs out with 200 on DELETE /api/auth/logout, as the HTML sign-out does' do
         delete '/api/auth/logout', as: :json
 
