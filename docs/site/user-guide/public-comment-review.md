@@ -35,12 +35,11 @@ Vulcan's project roles form a ladder — *viewer*, *author*,
 of it:
 
 - **Commenters** post comments during the open comment period. Any
-  project member can: posting a comment needs only *viewer*. (Don't be
-  misled by the role name *reviewer* — in Vulcan that is the
-  rule-review and section-locking role, which sits above *author*; it
-  is not the "person who comments" role.) Replying inside an existing
-  thread stays available while triage is active, even after the
-  comment window closes.
+  project member can — posting a comment needs only *viewer*. The role
+  named *reviewer* is not the "person who comments" role; in Vulcan it
+  is the rule-review and section-locking tier, above *author*.
+  Replying inside an existing thread stays available while triage is
+  active, even after the comment window closes.
 - **Authors** triage, respond to and adjudicate comments. They hold
   *author* or higher on the project. Authors do most of the
   day-to-day triage work — the bulk of this section is about their
@@ -88,8 +87,9 @@ The status is the primary lever an author uses. The decision form
 offers six of them; *Pending* is the starting state and *Withdrawn*
 belongs to the commenter.
 
-Vulcan shows a friendly label and the DISA matrix term together, so
-you can read the form and still file the DISA vocabulary.
+The decision form shows a plain-English label with the DISA matrix
+term in brackets, so you can work the form and still speak DISA's
+vocabulary in the disposition.
 
 | Status | Meaning | Terminal? |
 |---|---|---|
