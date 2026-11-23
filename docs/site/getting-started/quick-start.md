@@ -13,16 +13,23 @@ Get Vulcan up and running in minutes with Docker.
 ### 1. Pull and Run with Docker
 
 ```bash
-# Pull the latest released image
-docker pull mitre/vulcan:release-latest
+git clone https://github.com/mitre/vulcan.git
+cd vulcan
 
-# Or use docker compose for a complete setup
-wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
-wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
-chmod +x setup-docker-secrets.sh
+# Generate .env with secure secrets (choose 1 for development, 2 for production)
 ./setup-docker-secrets.sh
+
+# Run the published image instead of building locally (optional)
+echo 'IMAGE_NAME=mitre/vulcan:release-latest' >> .env
+
 docker compose up
 ```
+
+::: tip
+Clone the repository rather than downloading `docker-compose.yml` on its own:
+`setup-docker-secrets.sh` reads the `.env.example` / `.env.production.example` templates, and the
+compose file's `web` service builds from the repository when `IMAGE_NAME` is not set.
+:::
 
 ### 2. Access Vulcan
 

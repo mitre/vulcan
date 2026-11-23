@@ -31,14 +31,20 @@ Given that Vulcan requires at least a database service, we use Docker Compose.
 5. Navigate to `http://127.0.0.1:3000`
 6. Register a new account - the first user becomes admin automatically
 
-The entrypoint automatically runs `db:prepare` (create, migrate) on first startup. For automated admin setup, set `VULCAN_ADMIN_EMAIL` and `VULCAN_ADMIN_PASSWORD` in your `.env` file before starting.
+The entrypoint runs `db:prepare` on every container start — it creates the database if it is
+missing and applies pending migrations otherwise. For automated admin setup, set
+`VULCAN_ADMIN_EMAIL` and `VULCAN_ADMIN_PASSWORD` in your `.env` file before starting.
 
 #### Managing Docker Container
 
 The following commands are useful for managing the data in your docker container:
 
-- `docker compose run --rm web rake db:reset` **This destroys and rebuilds the db**
 - `docker compose run --rm web rake db:migrate` **This updates the db**
+- `docker compose down -v` followed by `docker compose up` **This destroys and rebuilds the db**
+
+`rake db:reset` is not usable here: it drops the database, and Rails refuses to drop a `production`
+database without `DISABLE_DATABASE_ENVIRONMENT_CHECK=1`. Removing the volume is the supported way
+to start over.
 
 #### Running Docker Container
 
@@ -57,7 +63,17 @@ docker compose pull
 docker compose up -d
 ```
 
-Database migrations run automatically on container startup. No data should be lost by this operation.
+`docker compose pull` needs a published image to pull, so set `IMAGE_NAME` in your `.env` first:
+
+```
+IMAGE_NAME=mitre/vulcan:release-latest
+```
+
+Without it, the `web` service builds from the repository instead. Database migrations run
+automatically on container startup. No data should be lost by this operation.
+
+See the [Upgrade Guide](../deployment/upgrade-guide.md) for what an upgrade changes and how to
+check it beforehand.
 
 #### Stopping the Container
 

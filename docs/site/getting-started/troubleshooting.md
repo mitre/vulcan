@@ -94,13 +94,16 @@ docker compose logs web
 
 Common causes:
 - Missing `SECRET_KEY_BASE` — run `./setup-docker-secrets.sh`
-- Database not ready — the entrypoint waits for PostgreSQL, but check `docker compose logs db`
+- Database not ready — `docker compose` holds `web` back until the `db` health check passes; check
+  `docker compose logs db`
 
 ### "Permission denied" on mounted volumes
 
+The application runs as UID 1000 in `/rails`:
+
 ```bash
-# Fix ownership
-docker compose run --rm web chown -R $(id -u):$(id -g) /app/storage
+# Fix ownership of a host-mounted storage directory
+sudo chown -R 1000:1000 ./data/storage
 ```
 
 ### Health check failing
@@ -137,7 +140,8 @@ heroku reviewapps:enable --app your-pipeline
 ### Slow page loads
 
 1. Check database query count: enable `config.log_level = :debug` and look for N+1 queries
-2. Verify `RAILS_MAX_THREADS` and `WEB_CONCURRENCY` are set appropriately
+2. Verify `RAILS_MAX_THREADS` is set appropriately — it sizes both the Puma thread pool and the
+   Active Record connection pool
 3. For Docker: ensure jemalloc is enabled (default in production Dockerfile)
 
 ### Rule editor feels sluggish
