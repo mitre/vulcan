@@ -57,14 +57,18 @@ Vulcan helps security teams create STIG-ready security guidance documentation. U
 
 ## Tech Stack
 
-- **Backend**: Ruby 3.4.10, Rails 8.1.3.1, PostgreSQL 18
-- **Frontend**: Vue 2.7.16 (14 separate instances), Bootstrap 4.6.2, Bootstrap-Vue 2.23.1
-- **Navigation**: Turbolinks 5.2.0 with vue-turbolinks adapter
+Minor versions only. The exact versions live in `.ruby-version`, `Gemfile.lock`, `package.json` and
+`docs/package.json` — read those when a patch digit matters, and do not re-pin patch digits here,
+because they go stale on every patch release.
+
+- **Backend**: Ruby 3.4, Rails 8.1, PostgreSQL 18
+- **Frontend**: Vue 2.7 (22 separate instances), Bootstrap 4.6, Bootstrap-Vue 2.23
+- **Navigation**: plain Rails full-page loads — there is no Turbolinks or Turbo in this app. `vue-router` 3 in hash mode provides in-page routing inside the component-editor and triage apps only
 - **Build**: esbuild via jsbundling-rails, Propshaft asset pipeline
 - **Package Manager**: YARN (NOT npm, NOT pnpm)
-- **Templates**: HAML (NOT ERB)
+- **Templates**: HAML (NOT ERB) — only exception is `app/views/user_mailer/`, which is ERB
 - **Settings**: mitre-settingslogic gem with `config/vulcan.default.yml`
-- **Documentation**: VitePress 2.x in `docs/` (separate Vue 3 deps, isolated from Rails Vue 2)
+- **Documentation**: VitePress 2.0 (alpha prerelease) in `docs/` (separate Vue 3 deps, isolated from Rails Vue 2)
 
 ---
 
@@ -129,21 +133,31 @@ yarn docs:preview                              # Preview production build locall
 
 ## Architecture
 
-### Vue.js Structure (14 Separate Instances)
+### Vue.js Structure (22 Separate Instances)
 
 Each page has its own Vue instance mounted via a pack file in `app/javascript/packs/`. They do NOT share a router or global store - each is independent.
 
+`esbuild.config.js` declares 24 entry points: 23 pack files plus one SCSS entry. 22 of the packs mount a
+Vue instance; `application.js` does not.
+
 Entry points (configured in `esbuild.config.js`):
-- `application.js` - Base with Turbolinks/Rails UJS setup
+- `application.js` - Base: Rails UJS, ActiveStorage, ActionCable channels, `application.scss` (no Vue instance)
+- `bootstrap-vue` - `app/javascript/bootstrap-vue.scss`, the only non-JS entry point
 - `navbar.js`, `toaster.js` - Global UI (present on every page)
 - `login.js` - Login page
-- `projects.js`, `project.js` - Project management
-- `project_components.js`, `project_component.js` - Component editing
+- `projects.js`, `project.js`, `project_triage.js` - Project management
+- `project_components.js`, `project_component.js`, `component_settings.js`, `component_triage.js`, `released_component.js` - Component editing
 - `rules.js` - Rule management
-- `security_requirements_guides.js`, `stig.js`, `stigs.js` - SRG/STIG views
-- `users.js` - User management
+- `security_requirements_guides.js`, `srg.js`, `stig.js`, `stigs.js` - SRG/STIG views
+- `users.js`, `user_profile.js`, `user_password.js`, `user_activity.js`, `user_comments.js`, `user_tokens.js` - User management
 
-All packs use `vue-turbolinks` mixin for Turbolinks compatibility. Components are in `app/javascript/components/`, shared utilities in `app/javascript/store/` and `app/javascript/mixins/`.
+Packs mount on `DOMContentLoaded`. There is no `vue-turbolinks` mixin and no Turbolinks adapter — neither
+package is installed. Five packs (`project_component.js`, `rules.js`, `project_triage.js`,
+`component_triage.js`, `user_comments.js`) mount through the shared `createVulcanApp()` helper in
+`app/javascript/lib/createVulcanApp.js`, which registers Bootstrap-Vue and Pinia and attaches a router when one is passed;
+the other 17 call `new Vue(...)` directly. Components are in `app/javascript/components/`. Shared code
+lives in `app/javascript/stores/` (Pinia stores), `app/javascript/composables/`, `app/javascript/api/`,
+`app/javascript/utils/` and `app/javascript/lib/`; there is no `store/` or `mixins/` directory.
 
 ### Key Models
 
@@ -392,8 +406,7 @@ rm /tmp/desc.md
 
 - Lazy route loading requires `Rails.application.reload_routes!` in test setup
 - Controller specs no longer work - use request specs
-- Built-in reloader replaces Spring gem
-- Turbolinks still works but is deprecated
+- Built-in reloader replaces Spring gem (the `spring` gem is not in the Gemfile)
 
 ## Do Not Do
 
