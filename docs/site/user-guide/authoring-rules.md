@@ -106,8 +106,8 @@ cases. When section locks are set, the badge instead names them
 
 ## Tips
 
-- Use **Advanced Fields** toggle for metadata fields (rule weight, ident system, etc.)
-- The **InSpec Control Body** tab lets you add custom InSpec test code
-- **Related Rules** shows how other components implemented the same SRG requirement
-- **History** sidebar tracks all changes with revert capability
-- **Clone** duplicates a rule within the same component
+- The **Advanced Fields** toggle exposes metadata fields (rule weight, ident system, etc.). Turning it on is a component-admin action, and it asks you to confirm.
+- The **Test Script** tab is where you write the InSpec control body; the **Generated Control (Read-Only)** tab beside it shows the full control Vulcan assembles from it. Both are STIG-only — SRG requirements carry no InSpec.
+- **Related** shows how other components implemented the same SRG requirement
+- The **Rule Changelog** panel tracks all changes, with revert from any entry
+- **Clone** duplicates a rule within the same component (STIG components only)
