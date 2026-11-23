@@ -461,7 +461,7 @@ Vulcan's production environment already logs to stdout, so the orchestration pla
 |----------|-------------|---------|---------|
 | `SECRET_KEY_BASE` | Rails secret key base. **Required in production** — Rails refuses to boot without it. Generate with `openssl rand -hex 64` or `rails secret`; `setup-docker-secrets.sh` writes one into `.env`. | - | 128 hex characters |
 | `RAILS_ENV` | Rails environment | `development` | `production` |
-| `RAILS_FORCE_SSL` | Force HTTPS redirects (set to `false` for Docker without SSL termination) | `true` | `false` |
+| `RAILS_FORCE_SSL` | Force HTTPS redirects. Rails defaults this to `true`, but `docker-compose.yml` overrides it to `false` for the HTTP quickstart; set it to `true` in `.env` once a reverse proxy terminates TLS. | `true` (Rails), `false` (compose) | `true` |
 | `RAILS_MAX_THREADS` | Puma threads per process and the matching DB connection pool size | `3` | `10` |
 | `RAILS_LOG_LEVEL` | Production log verbosity | `info` | `debug` |
 | `PIDFILE` | Puma pidfile path (unset = no pidfile) | - | `tmp/pids/server.pid` |
