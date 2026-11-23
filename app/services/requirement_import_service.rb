@@ -28,7 +28,7 @@ class RequirementImportService
     @component.transaction do
       parents_primary_first.each do |srg|
         versions = selections ? Array(selections[srg.id]) : nil
-        next if versions&.empty?
+        next if versions && versions.empty?
 
         import_parent!(srg, versions: versions)
       end

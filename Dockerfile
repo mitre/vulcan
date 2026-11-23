@@ -16,18 +16,33 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
-ARG RUBY_VERSION=3.4.10
+# Toolchain pins. Developers and CI install Ruby, Node and Yarn with mise, and
+# mise.lock records each release and its checksums; every value below must
+# match it (spec/config/toolchain_version_consistency_spec.rb fails otherwise).
+# Ruby is compiled here rather than installed by mise because the image's Ruby
+# must link the base image's OpenSSL (see build-base).
+ARG RUBY_VERSION=3.4.12
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
-# 3.4.10 (2026-06-30) ships default gem erb 4.0.4.1 (CVE-2026-41316) and
-# net-imap 0.5.15 (CVE-2026-4224x) — clears the ruby-layer default-gem findings.
-ARG RUBY_SHA256=ecee2d072a14f2d14347dd56dfd8fe5c3130abf5117bfaacbda0f4ef9cc429ec
-ARG BUNDLER_VERSION=2.7.2
-ARG NODE_VERSION=24.18.0
+# 3.4.12 (2026-10-23) fixes the Onigmo regexp compilation bugs behind
+# CVE-2026-89078, CVE-2026-93577, CVE-2026-97229 and CVE-2026-110264. It ships
+# the same default gems as 3.4.10: erb 4.0.4.1 (CVE-2026-41316) and net-imap
+# 0.5.15 (CVE-2026-4224x), which clear the ruby-layer default-gem findings.
+ARG RUBY_SHA256=5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479
+ARG NODE_VERSION=24.22.2
+# SHA256 of node-v<version>-linux-<x64|arm64>.tar.gz, as mise.lock records them.
+ARG NODE_SHA256_AMD64=361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9
+ARG NODE_SHA256_ARM64=95c264150aceb7f3437a29fd6984924f5f8d1511ea3cbd6c508b83f6c555dae2
+# Yarn is package.json's packageManager release, installed from the same
+# checksummed file mise uses rather than downloaded unverified by corepack.
+# Not named YARN_*: Yarn reads every YARN_* variable in its environment as a
+# setting and refuses to run on an unknown one, and these reach later stages.
+ARG YARNPKG_VERSION=4.18.1
+ARG YARNPKG_SHA256=a28ad591febb769f939c11f82f89bacad0b0fac0c884d3b78fa2aaaee970907e
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:8eb2830d0936237fc13a1f2f7e45aecf90d69043380ad167fad0343632937f41 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:bba2b4bbf0ed15cfe7dd72a1e17ae7d2015a141f306b304e1a2785c41400e39c AS base
 
 USER 0
 
@@ -86,7 +101,6 @@ FROM base AS build-base
 
 ARG RUBY_VERSION
 ARG RUBY_SHA256
-ARG BUNDLER_VERSION
 
 USER 0
 
@@ -101,6 +115,7 @@ RUN microdnf update -y && \
       gcc-c++ \
       git \
       gmp-devel \
+      gzip \
       libffi-devel \
       libyaml-devel \
       make \
@@ -117,6 +132,9 @@ RUN microdnf update -y && \
 # findutils, tar, xz are kept here (build-time only) and intentionally
 # excluded from the base stage — they're not needed at runtime.
 
+# `gem update --system` upgrades RubyGems and its bundled Bundler together
+# (they release in lockstep). Bundler then runs the version recorded in
+# Gemfile.lock's BUNDLED WITH, so the lockfile is the only Bundler pin.
 RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
     tar --no-same-owner -xzf /tmp/ruby.tar.gz -C /tmp && \
@@ -127,7 +145,6 @@ RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.o
     make -j"$(nproc)" && \
     make install && \
     gem update --system --no-document && \
-    gem install bundler:${BUNDLER_VERSION} --no-document && \
     chown -R 1000:0 /usr/local/bundle && \
     chmod -R g=u /usr/local/bundle && \
     cd /tmp && \
@@ -152,18 +169,31 @@ RUN curl -fsSL --proto '=https' --proto-redir '=https' https://github.com/jemall
 # Node.js is installed to /opt/node, not /usr/local, so the production
 # stage's `COPY --from=build /usr/local /usr/local` doesn't drag a Node
 # runtime into the final image. Asset compilation is build-stage-only.
+# Yarn goes in the same directory, so it leaves with Node.
 ARG NODE_VERSION
+ARG NODE_SHA256_AMD64
+ARG NODE_SHA256_ARM64
+ARG YARNPKG_VERSION
+ARG YARNPKG_SHA256
 ARG TARGETARCH
 ENV PATH="/opt/node/bin:${PATH}"
-RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
-    NODE_TARBALL="node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
-    curl -fsSL --proto '=https' --proto-redir '=https' "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" -o /tmp/node.tar.xz && \
-    curl -fsSL --proto '=https' --proto-redir '=https' "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /tmp/node.sha256 && \
-    awk -v t="${NODE_TARBALL}" '$2 == t { print $1 "  /tmp/node.tar.xz" }' /tmp/node.sha256 | sha256sum -c - && \
-    mkdir -p /opt/node && \
-    tar --no-same-owner -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1 && \
-    rm -f /tmp/node.tar.xz /tmp/node.sha256 && \
-    corepack enable
+RUN set -eu; \
+    case "$TARGETARCH" in \
+      amd64) node_arch=x64; node_sha256="$NODE_SHA256_AMD64" ;; \
+      arm64) node_arch=arm64; node_sha256="$NODE_SHA256_ARM64" ;; \
+      *) echo "Unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL --proto '=https' --proto-redir '=https' "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${node_arch}.tar.gz" -o /tmp/node.tar.gz; \
+    echo "${node_sha256}  /tmp/node.tar.gz" | sha256sum -c -; \
+    mkdir -p /opt/node; \
+    tar --no-same-owner -xzf /tmp/node.tar.gz -C /opt/node --strip-components=1; \
+    rm -f /tmp/node.tar.gz; \
+    curl -fsSL --proto '=https' --proto-redir '=https' "https://repo.yarnpkg.com/${YARNPKG_VERSION}/packages/yarnpkg-cli/bin/yarn.js" -o /tmp/yarn.js; \
+    echo "${YARNPKG_SHA256}  /tmp/yarn.js" | sha256sum -c -; \
+    install -m 755 /tmp/yarn.js /opt/node/bin/yarn; \
+    rm -f /tmp/yarn.js; \
+    node --version; \
+    yarn --version
 
 USER 1000
 
@@ -185,8 +215,11 @@ RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
+# Yarn 4 installs devDependencies unless told otherwise, and --immutable fails
+# if yarn.lock would change, as in CI. Its package cache lives under the
+# global folder, so that is what the cache mount holds.
 RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
-    yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
+    YARN_GLOBAL_FOLDER=/tmp/.yarn-cache YARN_HTTP_TIMEOUT=100000 yarn install --immutable
 
 # Strip build-only inputs from the application tree. One thing under docs/ is
 # read at runtime and must survive: the documentation site that asset
@@ -212,7 +245,8 @@ RUN set -eu; \
     spec \
     test \
     .git \
-    .node-version \
+    .yarn \
+    .yarnrc.yml \
     .nvmrc \
     .browserslistrc \
     yarn.lock \
@@ -252,9 +286,9 @@ ENV RAILS_ENV="development" \
     BUNDLE_DEPLOYMENT="0" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
-COPY --chown=1000:0 Gemfile Gemfile.lock package.json yarn.lock esbuild.config.js ./
+COPY --chown=1000:0 Gemfile Gemfile.lock package.json yarn.lock .yarnrc.yml esbuild.config.js ./
 RUN bundle install
-RUN yarn install --frozen-lockfile
+RUN yarn install --immutable
 
 COPY --chown=1000:0 . .
 

@@ -29,15 +29,17 @@ sudo yum update -y
 sudo apt-get install -y build-essential git curl wget \
   libpq-dev libssl-dev libreadline-dev zlib1g-dev \
   libyaml-dev libffi-dev libgdbm-dev libncurses5-dev \
-  automake libtool bison nodejs npm nginx
+  automake libtool bison nginx
 
 # RHEL/CentOS
 sudo yum groupinstall -y "Development Tools"
 sudo yum install -y git curl wget postgresql-devel \
   openssl-devel readline-devel zlib-devel libyaml-devel \
   libffi-devel gdbm-devel ncurses-devel automake \
-  libtool bison nodejs npm nginx
+  libtool bison nginx
 ```
+
+Node.js and Yarn are installed with [mise](https://mise.jdx.dev) from the application checkout, at the versions the project pins (step 3 of the application setup).
 
 ## Ruby Installation
 
@@ -53,11 +55,13 @@ source ~/.bashrc
 # Install ruby-build
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
-# Install Ruby 3.4.10
-rbenv install 3.4.10
-rbenv global 3.4.10
+# Install Ruby 3.4.12
+rbenv install 3.4.12
+rbenv global 3.4.12
 ruby -v  # Verify installation
 ```
+
+rbenv compiles Ruby against the system OpenSSL. If you install Ruby with mise instead, set `MISE_RUBY_COMPILE=true` first so it does the same; mise's default prebuilt Ruby carries its own OpenSSL, which does not use the host's FIPS-validated module on a FIPS-enabled host.
 
 ### Using RVM (Alternative)
 
@@ -66,9 +70,9 @@ ruby -v  # Verify installation
 curl -sSL https://get.rvm.io | bash -s stable
 source ~/.rvm/scripts/rvm
 
-# Install Ruby 3.4.10
-rvm install 3.4.10
-rvm use 3.4.10 --default
+# Install Ruby 3.4.12
+rvm install 3.4.12
+rvm use 3.4.12 --default
 ruby -v  # Verify installation
 ```
 
@@ -129,9 +133,10 @@ bundle config set --local deployment 'true'
 bundle config set --local without 'development test'
 bundle install
 
-# Install Node.js dependencies
-npm install -g yarn
-yarn install --production
+# Install Node.js and Yarn at the versions in mise.lock, then the
+# JavaScript dependencies (asset compilation needs devDependencies)
+mise trust && mise install node yarn
+yarn install --immutable
 ```
 
 ### 4. Configure Application
@@ -510,7 +515,8 @@ find /var/www/vulcan -type f -exec chmod 644 {} \;
 cd /var/www/vulcan
 git pull origin main
 bundle install
-yarn install
+mise install node yarn
+yarn install --immutable
 bundle exec rails db:migrate
 bundle exec rails assets:precompile
 sudo systemctl restart vulcan

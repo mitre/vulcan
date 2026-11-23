@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module CciMap
   module Constants
     CCI_TO_NIST_CONSTANT = {
@@ -5107,4 +5107,3 @@ module CciMap
     }.freeze
   end
 end
-# rubocop:enable Metrics/ModuleLength

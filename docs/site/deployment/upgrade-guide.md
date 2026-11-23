@@ -115,7 +115,8 @@ The entrypoint runs in order:
 ```bash
 git pull origin v2.4.0
 bundle install
-yarn install --frozen-lockfile && yarn build
+mise install node yarn                # Node.js and Yarn at the versions in mise.lock
+yarn install --immutable && yarn build
 bundle exec rake upgrade:preflight    # Review what will change
 bundle exec rake upgrade:fix          # Apply infrastructure fixes
 bundle exec rake db:prepare           # Run migrations

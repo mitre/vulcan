@@ -25,21 +25,21 @@ import { withBase } from 'vitepress'
 import {
   ClipboardList,
   Search,
-  BarChart3,
+  ChartColumn,
   Users,
   Link2,
   ShieldCheck,
   BookOpen,
   GitPullRequest,
   MessageSquare,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 const features = [
   { icon: ClipboardList, title: 'STIG Process Modeling',
     details: 'Manage the complete workflow between vendors and sponsors for STIG creation' },
   { icon: Search, title: 'InSpec Integration',
     details: 'Write and test validation code locally or across SSH, AWS, and Docker targets' },
-  { icon: BarChart3, title: 'Control Management',
+  { icon: ChartColumn, title: 'Control Management',
     details: 'Track control status, revision history, and relationships between requirements' },
   { icon: Users, title: 'Collaborative Authoring',
     details: 'Multiple authors can work on control sets with built-in review workflows' },
@@ -112,7 +112,7 @@ Vulcan bridges the gap between security requirements and practical implementatio
   <div class="tech-section">
     <h3>Backend</h3>
     <ul>
-      <li>Ruby 3.4.10 with Rails 8.1.3.1</li>
+      <li>Ruby 3.4.12 with Rails 8.1.4</li>
       <li>PostgreSQL 18</li>
     </ul>
   </div>

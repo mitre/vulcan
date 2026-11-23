@@ -85,7 +85,7 @@ describe("UserTokens", () => {
       wrapper = createWrapper();
       await wrapper.setData({ newlyCreatedToken: "vulcan_secret" });
 
-      wrapper.vm.copyToken();
+      await wrapper.vm.copyToken();
 
       expect(execCommand).toHaveBeenCalledWith("copy");
       expect(wrapper.vm.copied).toBe(true);

@@ -67,7 +67,7 @@ yarn docs:preview  # Preview production build
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.4.10** with **Rails 8.1.3.1**
+- **Ruby 3.4.12** with **Rails 8.1.4**
 - **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
@@ -95,10 +95,8 @@ yarn docs:preview  # Preview production build
 
 ### Prerequisites
 
-- Ruby 3.4.10 (use rbenv or rvm)
+- [mise](https://mise.jdx.dev), which installs the pinned Ruby, Node.js and Yarn
 - PostgreSQL 18
-- Node.js 24 LTS
-- Yarn package manager
 
 ### Local Installation
 
@@ -106,6 +104,9 @@ yarn docs:preview  # Preview production build
 # Clone the repository
 git clone https://github.com/mitre/vulcan.git
 cd vulcan
+
+# Install Ruby, Node.js and Yarn at the versions in mise.lock
+mise trust && mise install
 
 # Install Ruby dependencies
 bundle install

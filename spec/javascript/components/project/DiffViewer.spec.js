@@ -66,6 +66,19 @@ describe("DiffViewer", () => {
     });
   });
 
+  // ─── Diff sides ──────────────────────────────────────────
+  describe("diff sides", () => {
+    it("shows the base (older) control on the original side and the compare (newer) on the modified side", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({ baseControl: "older control", diffControl: "newer control" });
+
+      const editor = wrapper.findComponent({ name: "MonacoEditor" });
+      expect(editor.exists()).toBe(true);
+      expect(editor.props("original")).toBe("older control");
+      expect(editor.props("value")).toBe("newer control");
+    });
+  });
+
   // ─── Theme selector ──────────────────────────────────────
   describe("theme selector", () => {
     it("has a theme dropdown", () => {

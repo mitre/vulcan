@@ -150,9 +150,8 @@ class RulesController < ApplicationController
     # Without this, a mid-cleanup failure left the rule soft-deleted with
     # orphan additional_answers / reviews / satisfied_by rows.
     Rule.transaction do
-      # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
+      # rubocop:disable-next Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
       @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
-      # rubocop:enable Rails/SkipsModelValidations
       @rule.reviews.destroy_all
       if @rule.is_a?(Rule)
         # Rule-only dependents and the Rule-only counter cache — authored
@@ -392,7 +391,7 @@ class RulesController < ApplicationController
     # Rails 8: Use require.permit for nested array attributes (checks_attributes, etc.)
     # params.expect doesn't handle nested arrays well - causes them to be filtered out
     # See: https://github.com/mitre/vulcan/issues/692
-    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested attributes (issue #692)
+    # rubocop:disable-next Rails/StrongParametersExpect -- params.expect breaks nested attributes (issue #692)
     params.require(:rule).permit(
       :status, :status_justification, :artifact_description, :vendor_comments,
       :rule_severity, :rule_weight, :version, :title, :ident, :ident_system, :fixtext,
@@ -407,7 +406,6 @@ class RulesController < ApplicationController
         third_party_tools mitigation_control responsibility ia_controls _destroy
       ]
     )
-    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def set_rule
