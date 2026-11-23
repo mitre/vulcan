@@ -11,15 +11,14 @@ preserved on the review row for the life of the record.
 Every re-parented comment carries two parallel records of where it
 originally came from:
 
-1. **Human-readable prefix** in the comment text:
+1. **Human-readable prefix** in the comment text, inline ahead of the
+   original wording:
    ```
-   [Re: CNTR-00-001028]
-   The commenter's original text...
+   [Re: CNTR-00-001028] The commenter's original text...
    ```
    or, when an admin moves the comment retroactively:
    ```
-   [Moved from CNTR-00-001028: typo'd rule id]
-   The original comment text...
+   [Moved from CNTR-00-001028: typo'd rule id] The original comment text...
    ```
    Triagers reading the thread see this in line; it's a prose artifact.
 
@@ -49,9 +48,9 @@ The two channels serve different audiences:
 
 ## Where it shows up
 
-- **JSON-archive export**: the export serializer carries
-  `original_commentable_id` (mapped through to the destination instance's
-  rule on re-import) so cross-instance backup/restore preserves the
+- **JSON-archive export**: the export serializer writes the original
+  target as `original_rule_id` — the rule's stable rule-ID string, not
+  the local database id — so cross-instance backup/restore preserves the
   provenance.
 - **Import**: `ReviewBuilder` remaps the field through the archive's
   `rule_id` → new local `BaseRule.id` map (`@rule_id_map`), same as
