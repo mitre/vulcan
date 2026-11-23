@@ -66,8 +66,8 @@ Satisfied rules automatically inherit the satisfying rule's check and fix text.
 ### 5. Review and Lock
 
 #### Per-Rule Review
-1. Click **Request Review** in the toolbar
-2. A reviewer examines the rule and approves or requests changes
+1. Click **Change Review Status** in the toolbar and pick **Request Review** in the **Complete a Review** modal
+2. A reviewer examines the rule and **Approve**s it or uses **Request Changes**
 3. Approved rules become locked (all fields read-only)
 
 #### Per-Section Lock
@@ -75,8 +75,8 @@ Reviewers and admins can lock individual sections (e.g., Status, Severity) while
 
 #### Bulk Lock
 From the component card, click **Lock** to lock all rules at once. Choose between:
-- **Lock entire rules** — all fields locked
-- **Lock sections only** — select which sections to lock
+- **Lock all rule fields** — every field locked
+- **Lock selection of fields** — pick the sections to lock
 
 ### 6. Export
 
@@ -93,13 +93,15 @@ Available formats depend on the mode: XCCDF, InSpec, CSV, Excel, JSON Archive.
 
 ## Visual Field States
 
-When editing rules, colored left borders indicate field state:
+A **yellow left border** on a field group means that section is locked by
+a reviewer; the rest of the form stays editable, and a legend above the
+form explains the marking.
 
-- **Yellow border** — section locked by a reviewer
-- **Blue border** — rule is under review
-- **Grey border** — entire rule is locked
-
-A badge above the form shows the overall lock status. A legend explains active states.
+The other two lock states apply to the whole rule, so they show as a
+badge above the form rather than per field: a blue **Under Review**
+badge, or a grey **Rule Locked** badge, with the form disabled in both
+cases. When section locks are set, the badge instead names them
+("Status locked", or "3 sections locked").
 
 ## Tips
 

@@ -40,12 +40,16 @@ Lock icons are only visible when:
 
 ### Bulk Section Locking
 
-From the component card, click the **Lock** button. The modal now offers two modes:
+From the component card, click the **Lock** button. The **Lock Mode** radio group in the modal offers:
 
-1. **Lock entire rules** — existing behavior, locks all fields on all unlocked rules
-2. **Lock sections only** — select which sections to lock across all unlocked rules
+1. **Lock all rule fields** — locks every field on every unlocked rule
+2. **Lock selection of fields** — pick the sections to lock across all unlocked rules, from the **Sections to lock** list
 
 This lets you lock policy fields (e.g., Status + Severity) across an entire component while keeping technical sections editable.
+
+The **Lock** button appears for reviewers and admins, but the two modes are gated differently: locking all fields is an admin action, while locking a selection of sections is open to reviewers. A reviewer who picks the first mode is refused.
+
+Rules that cannot satisfy the DISA field matrix are skipped rather than blocking the batch: Not Yet Determined rules that satisfy nothing, Does Not Meet without a Mitigation, and Inherently Meets without an Artifact Description. The response names each one it skipped.
 
 ## Interaction with Whole-Rule Lock
 
