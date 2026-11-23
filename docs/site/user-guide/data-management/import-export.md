@@ -118,10 +118,10 @@ change any rule's status; they only record the relationship.
 | Format | Available For | Description |
 |--------|--------------|-------------|
 | **XCCDF** | Components, Projects, STIGs, SRGs | DISA SCAP XML format |
-| **CSV** | Components, STIGs, SRGs | Spreadsheet with selectable columns |
+| **CSV** | Components, Projects, STIGs, SRGs | Spreadsheet with selectable columns |
 | **InSpec** | Components, Projects | Chef InSpec profile (ZIP) |
 | **Excel** | Components, Projects | Standard `.xlsx` spreadsheet |
-| **JSON Archive** | Projects | Full-fidelity backup (ZIP) |
+| **JSON Archive** | Components, Projects | Full-fidelity backup (ZIP) |
 
 ### Exporting a STIG or SRG
 
@@ -196,7 +196,7 @@ XCCDF exports produce valid DISA XCCDF-Benchmark XML with:
   is not emitted in XCCDF.
 
 ::: tip
-Only rules with status **Applicable - Configurable** (without `satisfied_by` relationships) are included in XCCDF and InSpec exports. Rules satisfied by other rules are excluded since their requirements are met elsewhere.
+On a STIG component, only rules with status **Applicable - Configurable** (and without `satisfied_by` relationships) are included in XCCDF and InSpec exports. Rules satisfied by other rules are excluded since their requirements are met elsewhere. On an SRG component the published XCCDF includes the **Applicable** requirements.
 :::
 
 ### InSpec Export Details
