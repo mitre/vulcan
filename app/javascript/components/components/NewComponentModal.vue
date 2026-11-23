@@ -374,6 +374,14 @@ export default {
     sourceSelection: {
       deep: true,
       handler: function (selection) {
+        // The SourceSrgPicker (and this mirror) exist only in the create-new
+        // picker flow. In the duplicate/copy/spreadsheet flows the SRG is
+        // inherited (predetermined / detected / from the source component), so
+        // mirroring the empty picker selection here would clobber it — e.g.
+        // showModal's reset of sourceSelection to {primaryId: null} would wipe
+        // a duplicate's inherited SRG and trip the "Please select an SRG" guard.
+        if (!this.profilePickerMode) return;
+
         this.security_requirements_guide_id = selection.primaryId;
       },
     },
@@ -429,37 +437,61 @@ export default {
       this.admin_email = user.email;
       this.admin_name = user.name;
     },
-    fetchData: function (_bvModalEvt) {
-      getSrgs().then((response) => {
+    fetchData: async function (_bvModalEvt) {
+      // The two lists load independently: a failure in one is reported and
+      // the other still fills in.
+      await Promise.all([this.loadSrgs(), this.loadProjects()]);
+    },
+    loadSrgs: async function () {
+      try {
+        const response = await getSrgs();
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
-      });
-      getProjects().then((response) => {
-        this.projects = response.data;
-      });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    setSelectedProject: function (project) {
+    loadProjects: async function () {
+      try {
+        const response = await getProjects();
+        this.projects = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
+    setSelectedProject: async function (project) {
       if (!project) return;
-      if (!this.selected_project_id || this.selected_project_id !== project.id) {
+      const changed = !this.selected_project_id || this.selected_project_id !== project.id;
+      if (changed) {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
         this.security_requirements_guide_displayed = null;
-        getProject(project.id).then((response) => {
-          this.components = this.addDisplayNameToComponents(response.data.components);
-          this.componentKey += 1;
-        });
       }
       this.selected_project_id = project.id;
+      if (changed) await this.loadProjectComponents(project.id);
+    },
+    loadProjectComponents: async function (projectId) {
+      try {
+        const response = await getProject(projectId);
+        this.components = this.addDisplayNameToComponents(response.data.components);
+        this.componentKey += 1;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     setSelectedComponent: function (component) {
       if (!component) return;
       this.selected_component_id = component.id;
       this.security_requirements_guide_id = component.security_requirements_guide_id;
-      this.security_requirements_guide_displayed = this.srgs.find(
+      // The source component's SRG is normally in the loaded list, but guard
+      // against a missing match (e.g. the list not yet fetched) so selecting a
+      // component to copy can never throw on `.displayed`.
+      const sourceSrg = this.srgs.find(
         (srg) => srg.id === component.security_requirements_guide_id,
-      ).displayed;
+      );
+      this.security_requirements_guide_displayed = sourceSrg ? sourceSrg.displayed : "";
       this.name = component.name;
       this.version = component.version;
       this.release = component.release;
@@ -473,7 +505,7 @@ export default {
       if (!srg) return;
       this.security_requirements_guide_id = srg.id;
     },
-    createComponent: function (bvModalEvt) {
+    createComponent: async function (bvModalEvt) {
       // Prevent double submissions (B7 fix)
       if (this.loading) return;
       this.loading = true;
@@ -588,10 +620,14 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      createComponentInProject(this.project_id, formData)
-        .then(this.addComponentSuccess)
-        .catch(this.alertOrNotifyResponse)
-        .finally(this.completeLoading);
+      try {
+        const response = await createComponentInProject(this.project_id, formData);
+        this.addComponentSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.completeLoading();
+      }
     },
     completeLoading: function () {
       this.loading = false;

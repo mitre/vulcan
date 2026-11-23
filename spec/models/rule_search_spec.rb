@@ -118,7 +118,7 @@ RSpec.describe 'Rule Search' do
       # makes result order and every limit window deterministic; a gem
       # upgrade that changed it would silently reorder search results.
       sql = Rule.search_content('term').to_sql
-      expect(sql).to match(/ORDER BY pg_search_\w+\.rank DESC, "base_rules"\."id" ASC\z/)
+      expect(sql).to match(/ORDER BY pg_search_\w+\."rank" DESC, "base_rules"\."id" ASC\z/)
     end
 
     it 'keeps the vector current when a searched base column changes' do

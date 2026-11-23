@@ -12,7 +12,7 @@ on:
       - '.github/workflows/docs.yml'
   # Build-only check on PRs: a dead link (or any docs build failure) is caught
   # in the pipeline BEFORE it reaches a Heroku deploy preview. Uses the same
-  # frozen-lockfile deps as the deploy build, so it reproduces Heroku exactly.
+  # locked (--immutable) deps as the deploy build, so it reproduces Heroku exactly.
   # The Pages/deploy steps stay push-only (guarded below).
   pull_request:
     branches:
@@ -39,25 +39,22 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Required: VitePress lastUpdated uses git log timestamps
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      # Node.js and Yarn from mise.lock (the same versions as the app), plus the
+      # root dependencies, which provide the redocly CLI. The docs/
+      # subdirectory has its own package.json with VitePress/Vue 3, isolated
+      # from the main app's Vue 2.
+      - name: Set up Node.js, Yarn and the root dependencies
+        uses: ./.github/actions/setup-toolchain
         with:
-          # Docs use Node 24 (same as app). The docs/ subdirectory has its own
-          # package.json with VitePress/Vue 3 — isolated from the main app's Vue 2.
-          node-version-file: '.nvmrc'
-          cache: yarn
-          cache-dependency-path: docs/yarn.lock
+          ruby: 'false'
 
       - name: Setup Pages
         if: github.event_name == 'push'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Install root dependencies (for redocly CLI)
-        run: yarn install --frozen-lockfile
 
       - name: Generate OpenAPI JSON for docs
         run: yarn openapi:docs
@@ -72,8 +69,30 @@ jobs:
           # Docs have their own package.json with Vue 3 deps (isolated from
           # the Rails app's Vue 2). Install only docs deps in CI.
           cd docs
-          yarn install --frozen-lockfile
+          yarn install --immutable
           yarn build
+
+      - name: Install Playwright browser
+        working-directory: docs
+        # Not cached: Playwright's CI guide notes restoring the cache takes
+        # about as long as downloading, and the OS dependencies cannot be
+        # cached.
+        run: yarn playwright install --with-deps chromium
+
+      - name: Test the built docs site in a browser
+        working-directory: docs
+        env:
+          # Same target as the build, so the tests use the same base path.
+          VULCAN_DOCS_TARGET: "pages"
+        run: yarn test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: docs/playwright-report/
+          retention-days: 30
 
       - name: Upload artifact
         if: github.event_name == 'push'
@@ -96,4 +115,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

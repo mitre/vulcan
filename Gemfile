@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.10'
+ruby '3.4.12'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.1.0'
@@ -60,7 +60,7 @@ gem 'csv'
 gem 'audited', '~> 5.8.0'
 
 # Advisory locks for preventing race conditions (PostgreSQL/MySQL)
-gem 'with_advisory_lock', '~> 5.1'
+gem 'with_advisory_lock', '~> 7.6'
 
 # Health check endpoints for Kubernetes/Docker probes
 gem 'health_check', '~> 3.1'
@@ -84,7 +84,7 @@ gem 'amoeba'
 # For writing excel files with xml:space="preserve" (fixes whitespace round-trip)
 gem 'caxlsx'
 # For reading excel files
-gem 'roo', '~> 3.0'
+gem 'roo', '~> 4.0'
 
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'
@@ -163,7 +163,7 @@ end
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data'
 
-gem 'highline', '~> 2.0'
+gem 'highline', '~> 3.1'
 # Ruby wrapper around slack API
 gem 'slack-ruby-client', '~> 3.2'
 # Slack notification formatting

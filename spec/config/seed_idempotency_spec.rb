@@ -31,7 +31,7 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
 
     it 'does not use bare Membership.import without dedup' do
-      expect(seeds).not_to match(/Membership\.import/),
+      expect(seeds).not_to include('Membership.import'),
                            'Memberships must use find_or_create_by, not bulk import (causes duplicates on re-run)'
     end
   end
@@ -40,7 +40,7 @@ RSpec.describe 'seed file idempotency and completeness' do
     let(:seed_helpers) { Rails.root.join('lib/seed_helpers.rb').read }
 
     it 'SeedHelpers.seed_component requires title parameter' do
-      expect(seed_helpers).to match(/def self\.seed_component/).and(match(/\.fetch\(:title\)/)),
+      expect(seed_helpers).to include('def self.seed_component').and(include('.fetch(:title)')),
                               'SeedHelpers.seed_component must require title parameter'
     end
   end
@@ -127,9 +127,9 @@ RSpec.describe 'seed file idempotency and completeness' do
     it 'sets comment_phase to "open" with comment_period dates on at least one component' do
       expect(seeds).to match(/comment_phase:\s*['"]open['"]/),
                        'expected at least one component to have comment_phase: "open" for banner/icon coverage'
-      expect(seeds).to match(/comment_period_starts_at:/),
+      expect(seeds).to include('comment_period_starts_at:'),
                        'expected at least one component to set comment_period_starts_at for banner coverage'
-      expect(seeds).to match(/comment_period_ends_at:/),
+      expect(seeds).to include('comment_period_ends_at:'),
                        'expected at least one component to set comment_period_ends_at for banner countdown coverage'
     end
   end
@@ -141,7 +141,7 @@ RSpec.describe 'seed file idempotency and completeness' do
     let(:srg_seed) { Rails.root.join('db/seeds/data/14_srg_authoring_demo.rb').read }
 
     it 'creates the srg-kind component through the shared seed_component helper' do
-      expect(srg_seed).to match(/SeedHelpers\.seed_component/),
+      expect(srg_seed).to include('SeedHelpers.seed_component'),
                           'expected the SRG demo to use SeedHelpers.seed_component'
       expect(srg_seed).to match(/document_type:\s*['"]srg['"]/),
                           'expected the seeded component to be srg-kind'

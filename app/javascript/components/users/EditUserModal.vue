@@ -287,6 +287,7 @@ import {
 } from "../../api/usersApi";
 import { adminListTokens, adminRevokeToken as apiAdminRevoke } from "../../api/tokensApi";
 import { useToast } from "../../composables/useToast";
+import { useClipboard } from "../../composables/useClipboard";
 import PasswordField from "../shared/PasswordField.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
@@ -324,8 +325,9 @@ export default {
     },
   },
   setup() {
-    const { alertOrNotifyResponse } = useToast();
-    return { alertOrNotifyResponse };
+    const { alertOrNotifyResponse, showSuccess } = useToast();
+    const { copyText } = useClipboard();
+    return { alertOrNotifyResponse, showSuccess, copyText };
   },
   data() {
     return {
@@ -348,20 +350,20 @@ export default {
   },
   computed: {
     isLocalUser() {
-      return !this.localUser || !this.localUser.provider;
+      return !this.localUser?.provider;
     },
     isLocked() {
       return this.localUser && !!this.localUser.locked_at;
     },
     providerLabel() {
-      if (!this.localUser || !this.localUser.provider) return "Local";
+      if (!this.localUser?.provider) return "Local";
       return this.localUser.provider.toUpperCase();
     },
     passwordsMatch() {
       return this.directPassword && this.directPassword === this.directPasswordConfirm;
     },
     providerVariant() {
-      if (!this.localUser || !this.localUser.provider) return "secondary";
+      if (!this.localUser?.provider) return "secondary";
       const variants = {
         github: "dark",
         ldap: "info",
@@ -505,8 +507,10 @@ export default {
         this.settingPassword = false;
       }
     },
-    copyResetUrl() {
-      navigator.clipboard.writeText(this.generatedResetUrl);
+    async copyResetUrl() {
+      if (await this.copyText(this.generatedResetUrl, { what: "the reset link" })) {
+        this.showSuccess("Copied to clipboard", "Copy");
+      }
     },
     onHidden() {
       this.$emit("update:visible", false);
@@ -536,7 +540,7 @@ export default {
       try {
         const res = await apiAdminRevoke(token.id, comment);
         this.alertOrNotifyResponse(res);
-        if (this.localUser) this.loadUserTokens(this.localUser.id);
+        if (this.localUser) await this.loadUserTokens(this.localUser.id);
       } catch (err) {
         this.alertOrNotifyResponse(err);
       } finally {

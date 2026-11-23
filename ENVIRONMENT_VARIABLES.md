@@ -399,20 +399,21 @@ complete field-to-setting mapping.
 
 ## Development Environment
 
-For local development, create a `.env` file in the project root with your settings:
+For local development, settings are split across three files in the project root, each copied from its `.example`: `.env` (database and ports, loaded in every environment and by Docker Compose), `.env.development` (application settings) and `.env.test` (test suite settings). See "Environment Variables" in `docs/site/development/setup.md` for the load order.
 
 ```bash
-# Database (see docs/site/development/port-registry.md for multi-project ports)
+# .env — database (see docs/site/development/port-registry.md for multi-project ports)
 DATABASE_PORT=5435
 POSTGRES_PORT=5435
 DATABASE_HOST=127.0.0.1
 DATABASE_GSSENCMODE=disable
+```
 
-# Enable OIDC (example for Okta)
+```bash
+# .env.development — enable OIDC (example for Okta)
 VULCAN_ENABLE_OIDC=true
 VULCAN_OIDC_PROVIDER_TITLE=Okta
 VULCAN_OIDC_ISSUER_URL=https://dev-12345.okta.com
-VULCAN_OIDC_HOST=dev-12345.okta.com
 VULCAN_OIDC_CLIENT_ID=your_client_id
 VULCAN_OIDC_CLIENT_SECRET=your_client_secret
 

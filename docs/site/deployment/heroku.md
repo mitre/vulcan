@@ -40,6 +40,14 @@ heroku config:set VULCAN_CONTACT_EMAIL=admin@example.com
 heroku config:set VULCAN_APP_URL=https://your-vulcan-app.herokuapp.com
 ```
 
+   Add the buildpacks in this order (`app.json` lists the same three, but Heroku reads it only for Heroku Button and review apps):
+   ```bash
+   heroku buildpacks:add heroku/nodejs
+   heroku buildpacks:add https://github.com/gaffneyc/heroku-buildpack-jemalloc.git
+   heroku buildpacks:add heroku/ruby
+   ```
+   The Node.js buildpack takes the Node.js release line from `engines.node` in `package.json` and installs the Yarn release `packageManager` names; the Ruby buildpack installs the Ruby version recorded in `Gemfile.lock`.
+
 4. **Deploy the application**:
 ```bash
 git push heroku main
@@ -336,8 +344,8 @@ The postdeploy uses `DISABLE_DATABASE_ENVIRONMENT_CHECK=1` because review apps r
 
 4. **Regular updates**
    ```bash
-   # Update Ruby buildpack
-   heroku buildpacks:set heroku/ruby
+   # Buildpacks track their latest release on each deploy; check the order
+   heroku buildpacks
    
    # Update dependencies
    bundle update --conservative
