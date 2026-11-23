@@ -23,16 +23,16 @@ bin/vulcan
 .github/
 
 # Linter and code quality configs (not used at runtime)
-.eslintrc.js
+eslint.config.mjs
 .prettierrc
 .rspec
 .rubocop.yml
 .sonarcloud.properties
 
 # Dev-only version manager configs (Heroku uses buildpacks)
-.node-version
 .nvmrc
-.tool-versions
+mise.toml
+mise.lock
 
 # Dev-only files
 Procfile.dev

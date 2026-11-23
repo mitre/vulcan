@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Notification Fields which are specific to various controller/actions
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module NotificationFieldsHelper
   include Rails.application.routes.url_helpers
 
@@ -185,4 +185,3 @@ module NotificationFieldsHelper
     labels_hash[notification_type_prefix]
   end
 end
-# rubocop:enable Metrics/ModuleLength
