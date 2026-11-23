@@ -18,9 +18,10 @@
 
 ARG RUBY_VERSION=3.4.13
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
-# 3.4.13 (2026-11-18) is the current patch release on the 3.4 series. It ships
-# default gem erb 4.0.4.1 (CVE-2026-41316) and net-imap 0.5.15
-# (CVE-2026-4224x) — clears the ruby-layer default-gem findings.
+# 3.4.13 (2026-11-18) is the current patch release on the 3.4 series. Checked
+# against the release tarball rather than carried over from the previous pin:
+# it ships erb 4.0.4.1 as a default gem (CVE-2026-41316) and net-imap 0.5.15
+# as a bundled gem, so the ruby-layer gem findings stay closed.
 ARG RUBY_SHA256=d0d3bf3dd8c224a3c3b7ecd816a0f1b2cbcf4f87b5afcbdbe91d3fef177f351a
 ARG BUNDLER_VERSION=2.7.2
 ARG NODE_VERSION=24.18.0
