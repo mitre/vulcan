@@ -105,6 +105,10 @@ docker compose pull web
 docker compose up -d web
 ```
 
+`docker compose pull` needs a published image, so set `IMAGE_NAME` in your `.env` first (for
+example `IMAGE_NAME=mitre/vulcan:release-latest`). Without it the `web` service builds from the
+repository instead of pulling.
+
 The entrypoint runs in order:
 1. `bin/db-rename-legacy` — renames legacy databases (instant metadata operation)
 2. `db:prepare` — creates DB if missing, runs pending migrations

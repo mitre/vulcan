@@ -145,7 +145,10 @@ spec:
       automountServiceAccountToken: false  # Security best practice
       containers:
       - name: vulcan-web
-        image: mitre/vulcan:v2.3.1
+        # Released tags carry no leading "v" (the release workflow strips it):
+        # mitre/vulcan:2.4.2, or mitre/vulcan:release-latest for the newest release.
+        # Pin a specific version in production.
+        image: mitre/vulcan:release-latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -159,7 +162,7 @@ spec:
             memory: 2Gi
         volumeMounts:
         - name: config-volume
-          mountPath: /app/config/vulcan.yml
+          mountPath: /rails/config/vulcan.yml
           subPath: vulcan-config.yml
         env:
         # Database Configuration
@@ -174,10 +177,8 @@ spec:
         # Rails Configuration
         - name: RAILS_ENV
           value: production
-        - name: RAILS_SERVE_STATIC_FILES
-          value: "true"
-        - name: RAILS_LOG_TO_STDOUT
-          value: "true"
+        # The production environment logs to stdout and serves static files by
+        # default; RAILS_LOG_TO_STDOUT and RAILS_SERVE_STATIC_FILES are not read.
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
@@ -400,7 +401,7 @@ Mount in deployment:
 ```yaml
 volumeMounts:
 - name: uploads
-  mountPath: /app/public/uploads
+  mountPath: /rails/storage
 volumes:
 - name: uploads
   persistentVolumeClaim:

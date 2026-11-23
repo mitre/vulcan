@@ -42,7 +42,7 @@ heroku config:set VULCAN_APP_URL=https://your-vulcan-app.herokuapp.com
 
 4. **Deploy the application**:
 ```bash
-git push heroku main
+git push heroku master
 ```
 
 Migrations run automatically via the Procfile release phase (`bundle exec rails db:migrate`). No manual migration step is needed.
@@ -60,7 +60,12 @@ Migrations run automatically via the Procfile release phase (`bundle exec rails 
    heroku config:set VULCAN_ADMIN_EMAIL=admin@example.com
    heroku config:set VULCAN_ADMIN_PASSWORD=SecurePassword123!
    ```
-   Admin is created on the next deploy (hooked into `db:prepare` via Docker, or run manually with `heroku run rails admin:bootstrap`).
+   The `Procfile` release phase runs `db:migrate`, not `db:prepare`, so the bootstrap does not fire
+   on its own here — run it once after the deploy:
+
+   ```bash
+   heroku run rake admin:bootstrap
+   ```
 
 ## Configuration
 
@@ -137,16 +142,15 @@ See [Configuration](/getting-started/configuration#configure-classification-bann
 For OAuth/OIDC authentication, add:
 
 ```bash
-# GitHub OAuth
-VULCAN_GITHUB_APP_ID=your-github-app-id
-VULCAN_GITHUB_APP_SECRET=your-github-app-secret
-
 # OIDC
 VULCAN_ENABLE_OIDC=true
 VULCAN_OIDC_ISSUER_URL=https://your-provider.com
 VULCAN_OIDC_CLIENT_ID=your-client-id
 VULCAN_OIDC_CLIENT_SECRET=your-client-secret
 ```
+
+GitHub OAuth has no environment-variable form — Devise reads it from `Settings.providers`, which
+exists only in `config/vulcan.yml`. See [GitHub OAuth setup](auth/github.md).
 
 ## Add-ons
 

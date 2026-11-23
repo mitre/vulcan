@@ -28,37 +28,31 @@ After creating the app, you'll receive:
 
 ## Vulcan Configuration
 
-### Using Environment Variables
+GitHub OAuth is the one provider that cannot be configured by environment variables. Devise builds
+the strategy from `Settings.providers` (`config/initializers/devise.rb`), and that list exists only
+in the YAML config — there is no `VULCAN_*` or `GITHUB_*` variable wired to it.
 
-Set the following environment variables:
+### Using the Configuration File
 
-```bash
-# Enable GitHub authentication
-GITHUB_ENABLE_AUTH=true
-
-# GitHub OAuth credentials
-GITHUB_APP_ID=your_client_id_here
-GITHUB_APP_SECRET=your_client_secret_here
-
-# Optional: Request additional scopes
-GITHUB_SCOPE="user:email,read:org"
-```
-
-### Using Configuration File
-
-Edit `config/vulcan.yml`:
+Copy `config/vulcan.default.yml` to `config/vulcan.yml` and fill in the `providers` entry, which
+ships commented out:
 
 ```yaml
-production:
-  providers:
-    - name: 'github'
-      app_id: 'your_client_id_here'
-      app_secret: 'your_client_secret_here'
-      args:
-        scope: 'user:email,read:org'
-        # Optional: Restrict to organization members
-        # organizations: ['your-org-name']
+providers:
+  - name: 'github'
+    app_id: 'your_client_id_here'
+    app_secret: 'your_client_secret_here'
+    args:
+      scope: 'user:email,read:org'
+      # Optional: Restrict to organization members
+      # organizations: ['your-org-name']
 ```
+
+::: warning
+Copy `vulcan.default.yml` rather than writing a `vulcan.yml` from scratch. Settings load from one
+file only, and the default file's ERB is what makes every other `VULCAN_*` environment variable
+work — a minimal `vulcan.yml` turns all of them off.
+:::
 
 ## Advanced Configuration
 

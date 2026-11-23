@@ -29,8 +29,10 @@ Choose the deployment method that fits your infrastructure and team.
 
 Every production deployment needs:
 
-1. **Secrets** — `SECRET_KEY_BASE`, `CIPHER_PASSWORD`, `CIPHER_SALT` (generate with `openssl rand -hex 64`)
-2. **PostgreSQL 18** — dedicated database with secure password
+1. **Secrets** — `SECRET_KEY_BASE` and a database password. `./setup-docker-secrets.sh` generates
+   these (and the reserved `CIPHER_*` values) into a `.env` for you.
+2. **PostgreSQL** — a dedicated database with a secure password. The project's Compose files use
+   `postgres:18-alpine`, so 18 is the tested version.
 3. **Authentication** — at least one provider (OIDC recommended, LDAP, or local login)
 4. **SSL/TLS** — HTTPS for all production traffic
 
