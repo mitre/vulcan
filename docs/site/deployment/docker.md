@@ -50,8 +50,9 @@ Vulcan provides three ways to create the initial admin:
    docker compose exec web rails db:create_admin
    ```
 
-> **Note**: For local testing without SSL/reverse proxy, add `RAILS_FORCE_SSL=false` to your `.env` file.
-> For production with SSL termination (nginx, traefik), keep the default `RAILS_FORCE_SSL=true`.
+> **Note**: `docker-compose.yml` defaults the web service to `RAILS_FORCE_SSL=false` so the HTTP
+> quickstart works out of the box. For production behind SSL termination (Caddy, nginx, traefik),
+> set `RAILS_FORCE_SSL=true` in your `.env` file.
 
 ### Using Docker Run
 
@@ -70,11 +71,17 @@ docker run -d \
 
 ## Image Details
 
-- **Base**: Red Hat UBI 9 Minimal (`ubi-minimal:9.7`) with Ruby 3.4.10 compiled from source (YJIT enabled)
+- **Base**: Red Hat UBI 9 Minimal, pinned by tag *and* digest in the `Dockerfile`, with Ruby compiled
+  from source (YJIT enabled). The Ruby version comes from the `RUBY_VERSION` build arg and matches
+  `.ruby-version`; its tarball is verified against the `RUBY_SHA256` build arg.
 - **Architectures**: linux/amd64, linux/arm64 (multi-arch, built natively via Docker Build Cloud)
-- **Size**: ~529MB
-- **Memory**: jemalloc compiled from source + `MALLOC_ARENA_MAX=2` for 20-40% memory reduction
+- **Size**: see the tag listing on [Docker Hub](https://hub.docker.com/r/mitre/vulcan/tags)
+- **Memory**: jemalloc compiled from source + `MALLOC_ARENA_MAX=2`
 - **Security**: Non-root user (UID 1000), minimal attack surface, Iron Bank / DISA-aligned base image
+
+The production stage deliberately ships **no Node runtime** — JavaScript and CSS bundles are built
+during the image build. Custom/corporate CA certificates are imported at build time from `./certs/`
+(see `certs/README.md`), not mounted at runtime.
 
 ## Configuration
 
@@ -85,17 +92,31 @@ See [Environment Variables](../getting-started/environment-variables.md) for com
 Key variables for Docker:
 - `DATABASE_URL` - PostgreSQL connection string
 - `SECRET_KEY_BASE` - Rails secret key
-- `RAILS_ENV` - Set to `production`
-- `RAILS_LOG_TO_STDOUT` - Set to `true` for container logs
+- `RAILS_ENV` - Set to `production` (already set in the image)
+- `RAILS_FORCE_SSL` - `true` when a reverse proxy terminates TLS; `docker-compose.yml` defaults it to `false`
 - `VULCAN_SESSION_TIMEOUT` - Session inactivity timeout (e.g., `15m`, `900`, `1h`). DoD standard: `15m`
+- `IMAGE_NAME` - Image `docker compose` runs and pulls; set to `mitre/vulcan:release-latest` (or a
+  specific release tag) to use the published image instead of building locally
+
+The production environment logs to stdout unconditionally, so no logging variable is needed.
 
 ### Volumes
 
+The application's working directory inside the container is `/rails`. Uploaded files live in Active
+Storage's local disk service at `/rails/storage`.
+
+`docker-compose.yml` keeps the database in a named volume:
+
 ```yaml
 volumes:
-  - ./data/postgres:/var/lib/postgresql
-  - ./data/uploads:/app/public/uploads
-  - ./certs:/rails/certs  # For corporate SSL certificates
+  - vulcan_dbdata:/var/lib/postgresql
+```
+
+To persist uploads across container replacement, add a volume for the storage directory:
+
+```yaml
+volumes:
+  - ./data/storage:/rails/storage
 ```
 
 ## Production Deployment
@@ -129,7 +150,12 @@ VULCAN_LDAP_BASE=dc=example,dc=com
 
 For HTTPS, use a reverse proxy like nginx. The proxy should set the `X-Forwarded-Proto` header so Rails knows the original request was HTTPS.
 
-> **Important**: Keep `RAILS_FORCE_SSL=true` (default) when using a reverse proxy. Only set `RAILS_FORCE_SSL=false` for local Docker testing without SSL termination.
+> **Important**: Set `RAILS_FORCE_SSL=true` in `.env` when a reverse proxy terminates TLS.
+> `docker-compose.yml` defaults it to `false` for the HTTP quickstart.
+
+`docker-compose.yml` also ships commented-out Caddy and nginx proxy profiles with
+`Caddyfile.example` and `nginx.conf.example` as starting points — see the comments at the top of the
+compose file.
 
 Example nginx configuration:
 
@@ -155,7 +181,8 @@ server {
 
 The Docker entrypoint automatically runs `db:prepare` on every container start:
 
-- **First startup**: Creates the database, loads `db/schema.rb`, runs seeds, bootstraps admin
+- **First startup**: Creates the database, loads `db/schema.rb`, runs seeds (demo data only when
+  `VULCAN_SEED_DEMO_DATA=true`), bootstraps admin
 - **Subsequent startups**: Runs pending migrations only (existing data is preserved)
 
 No manual database initialization is needed. To run migrations manually:
@@ -180,8 +207,8 @@ Vulcan provides health check endpoints for container orchestration and monitorin
 
 **Docker Compose health check** (built into image):
 ```bash
-# Check container health status
-docker inspect --format='{{.State.Health.Status}}' vulcan
+# Check container health status (compose names the container <project>-web-1)
+docker inspect --format='{{.State.Health.Status}}' vulcan-web-1
 
 # Manual endpoint test
 curl http://localhost:3000/up
@@ -229,12 +256,14 @@ docker compose exec -T db psql -U postgres vulcan_production < backup.sql
 
 ### Application Data
 
+Uploaded files live in `/rails/storage` inside the container.
+
 ```bash
 # Backup uploads
-tar -czf uploads-backup.tar.gz ./data/uploads
+docker compose exec web tar -cz -C /rails storage > uploads-backup.tar.gz
 
 # Restore uploads
-tar -xzf uploads-backup.tar.gz
+docker compose exec -T web tar -xz -C /rails < uploads-backup.tar.gz
 ```
 
 ## Troubleshooting
@@ -247,7 +276,9 @@ tar -xzf uploads-backup.tar.gz
    - Verify network connectivity
 
 2. **Asset compilation errors**
-   - Run: `docker compose run --rm web bundle exec rails assets:precompile`
+   - Assets are compiled into the image at build time, and the production stage has no Node runtime,
+     so `assets:precompile` cannot be re-run inside the container. Rebuild the image instead:
+     `docker compose build web`
 
 3. **Permission errors**
    - Check volume mount permissions
