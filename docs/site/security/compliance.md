@@ -82,7 +82,7 @@ graph TD
 **How Vulcan Implements It:**
 - Configurable timeout via `VULCAN_SESSION_TIMEOUT`
 - Secure session cookies with Rails session management
-- Manual logout capability with session invalidation
+- Manual logout capability with session invalidation, confirmed to the user by an explicit "Signed out successfully." message (AC-12(02))
 
 **Configuration:**
 ```bash
@@ -92,9 +92,6 @@ VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
                                # Note: Single timeout for all user types
                                # Formats: 30s, 15m, 1h, or plain (900 = seconds)
 ```
-
-⚠️ **Known Gaps:**
-- Logout confirmation message (Issue #635) - In development
 
 #### System Use Notification (AC-08)
 
@@ -212,25 +209,31 @@ SELECT pg_reload_conf();
 #### OIDC Configuration Example
 
 ```yaml
-# config/vulcan.yml
-oidc:
-  enabled: true
-  issuer_url: https://login.example.com
-  client_id: vulcan-prod
-  client_secret: <%= ENV['OIDC_SECRET'] %>
-  scope: "openid profile email"
-  
-  # Advanced Settings
-  discovery: true                    # Auto-discover endpoints
-  response_type: "code"              # Authorization code flow
-  prompt: "select_account"           # Force account selection
-  max_age: 3600                      # Force re-auth after 1 hour
-  
-  # Attribute Mapping
-  uid_field: "preferred_username"
-  email_field: "email"
-  name_field: "name"
+# config/vulcan.yml — top-level keys are environments (Rails.env / VULCAN_ENV)
+production:
+  oidc:
+    enabled: true
+    title: "Example SSO"             # Label on the sign-in button
+    args:
+      scope:
+        - :openid
+        - :email
+        - :profile
+      uid_field: "sub"
+      response_type: :code           # Authorization code flow
+      discovery: true                # Auto-discover endpoints
+      issuer: https://login.example.com
+      prompt: "select_account"       # Force account selection
+      client_options:
+        identifier: vulcan-prod
+        secret: <%= ENV['OIDC_SECRET'] %>
+        redirect_uri: https://vulcan.example.com/users/auth/oidc/callback
 ```
+
+Every key above is also settable by environment variable — see the
+[Okta/OIDC setup guide](/deployment/auth/oidc-okta) and
+[ENVIRONMENT_VARIABLES.md](https://github.com/mitre/vulcan/blob/master/ENVIRONMENT_VARIABLES.md).
+Multiple simultaneous providers are configured through `VULCAN_OIDC_PROVIDERS`.
 
 #### Password Complexity (IA-05)
 
@@ -374,7 +377,7 @@ Rate limiting is enabled by default. Thresholds can be adjusted in `config/initi
 
 ```dockerfile
 # UBI9 minimal ships curl-minimal preinstalled; do not install curl (it conflicts).
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal AS base
 RUN microdnf install -y ca-certificates libpq shadow-utils && microdnf clean all
 
 FROM base AS build-base
@@ -401,7 +404,7 @@ USER app
 
 # Security: Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
+    CMD curl -f http://localhost:3000/up || exit 1
 
 # Security: Minimal exposure
 EXPOSE 3000
@@ -547,7 +550,7 @@ require 'rails_helper'
 RSpec.describe "NIST SP 800-53 Compliance" do
   describe "AC-12: Session Termination" do
     it "enforces session timeout" do
-      expect(Settings.session_timeout).to be <= 10.minutes
+      expect(TimeoutParser.parse(Settings.local_login.session_timeout)).to be <= 10.minutes
     end
     
     it "provides logout capability" do
@@ -586,7 +589,6 @@ end
 
 | Control | Gap | Workaround | Target Resolution |
 |---------|-----|------------|-------------------|
-| AC-12(02) | No logout confirmation | Check audit logs | Q1 2025 (Issue #635) |
 | AU-05 | No built-in log overflow handling | External log rotation | Use log management system |
 
 ### Security Roadmap
@@ -624,13 +626,13 @@ This table provides direct links to the Vulcan source code that implements each 
 
 | Control Category | Feature | Implementation Location | Status |
 |-----------------|---------|------------------------|--------|
-| **Session Management** | Session Timeout | [`config/vulcan.default.yml:29`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L29)<br>[`config/initializers/devise.rb:161`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb#L161) | ✅ Implemented<br>⚠️ Note: Defaults to 60 min, set to 10 min for compliance |
-| **System Banner** | Welcome Text | [`config/vulcan.default.yml:16`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L16)<br>[`app/views/devise/sessions/new.html.haml:13`](https://github.com/mitre/vulcan/blob/master/app/views/devise/sessions/new.html.haml#L13) | ✅ Implemented |
-| **Audit Logging** | User Auditing | [`app/models/user.rb:8`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb#L8) | ✅ Implemented |
-| **Audit Logging** | Component Auditing | [`app/models/component.rb:42`](https://github.com/mitre/vulcan/blob/master/app/models/component.rb#L42) | ✅ Implemented |
+| **Session Management** | Session Timeout | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml)<br>[`config/initializers/devise.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb) | ✅ Implemented<br>⚠️ Note: Defaults to 60 min, set to 10 min for compliance |
+| **System Banner** | Welcome Text | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml)<br>[`app/views/devise/sessions/new.html.haml`](https://github.com/mitre/vulcan/blob/master/app/views/devise/sessions/new.html.haml) | ✅ Implemented |
+| **Audit Logging** | User Auditing | [`app/models/user.rb`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb) | ✅ Implemented |
+| **Audit Logging** | Component Auditing | [`app/models/component.rb`](https://github.com/mitre/vulcan/blob/master/app/models/component.rb) | ✅ Implemented |
 | **OIDC** | Auto-Discovery | [`config/initializers/oidc_startup_validation.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/oidc_startup_validation.rb) | ✅ Implemented |
-| **LDAP** | Configuration | [`config/vulcan.default.yml:35-44`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L35) | ✅ Implemented |
-| **Authorization** | RBAC | [`app/controllers/application_controller.rb:16-22`](https://github.com/mitre/vulcan/blob/master/app/controllers/application_controller.rb#L16) | ✅ Implemented |
+| **LDAP** | Configuration | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml) | ✅ Implemented |
+| **Authorization** | RBAC | [`app/controllers/application_controller.rb`](https://github.com/mitre/vulcan/blob/master/app/controllers/application_controller.rb)<br>[`spec/requests/authorization_coverage_spec.rb`](https://github.com/mitre/vulcan/blob/master/spec/requests/authorization_coverage_spec.rb) | ✅ Implemented |
 | **Classification Banner** | System Sensitivity | [`config/vulcan.default.yml`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml)<br>[`app/views/layouts/application.html.haml`](https://github.com/mitre/vulcan/blob/master/app/views/layouts/application.html.haml) | ✅ Implemented |
 | **Consent Modal** | Terms Acknowledgement | [`app/javascript/components/navbar/ConsentModal.vue`](https://github.com/mitre/vulcan/blob/master/app/javascript/components/navbar/ConsentModal.vue) | ✅ Implemented |
 | **Password Complexity** | DoD 2222 Policy | [`app/models/concerns/password_complexity_validator.rb`](https://github.com/mitre/vulcan/blob/master/app/models/concerns/password_complexity_validator.rb) | ✅ Implemented |
@@ -665,11 +667,11 @@ The following improvements are tracked as GitHub issues:
 
 | Priority | Issue | Description | Target |
 |----------|-------|-------------|--------|
-| **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
-| **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
-| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
+| **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | Open |
+| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | Open |
 
-These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.
+Issue #635 (logout confirmation message) shipped: `SessionsController` sets an
+explicit sign-out notice, rendered by the Toaster component.
 
 ## Resources & Support
 
