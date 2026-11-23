@@ -122,9 +122,9 @@
         <MonacoEditor
           v-if="diffControl || baseControl"
           :key="`${selectedRuleId}-${editorKey}`"
-          :diff-editor="true"
-          :original="diffControl"
-          :value="baseControl"
+          diff
+          :original="baseControl"
+          :value="diffControl"
           :options="monacoEditorOptions"
           :language="monacoEditorOptions.language"
           :theme="monacoEditorOptions.theme"
@@ -141,7 +141,7 @@ import { searchBasedOnSameSrg, compareComponents } from "../../api/componentsApi
 // Compare spans components of both kinds, so the filter label reads the
 // deployment-default noun rather than a per-kind term.
 import { RULE_TERM } from "../../constants/terminology";
-import MonacoEditor from "vue-monaco";
+import MonacoEditor from "../shared/MonacoEditor.vue";
 import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
@@ -296,29 +296,31 @@ export default {
       this.baseControl = "";
       this.diffControl = "";
     },
-    updateCompareList: function () {
+    updateCompareList: async function () {
       this.ruleDeselected();
-      if (this.baseComponent) {
-        searchBasedOnSameSrg(this.baseComponent.id)
-          .then((response) => {
-            this.compareList = response.data;
-          })
-          .catch(this.alertOrNotifyResponse);
+      if (!this.baseComponent) return;
+      try {
+        const response = await searchBasedOnSameSrg(this.baseComponent.id);
+        this.compareList = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
       }
     },
-    compareComponents: function () {
+    compareComponents: async function () {
       this.ruleDeselected();
       if (
-        this.baseComponent &&
-        this.diffComponent &&
-        this.baseComponent.id !== this.diffComponent.id
+        !this.baseComponent ||
+        !this.diffComponent ||
+        this.baseComponent.id === this.diffComponent.id
       ) {
-        compareComponents(this.baseComponent.id, this.diffComponent.id)
-          .then((response) => {
-            // Response is { data: {…}, meta: {…} }; unwrap.
-            this.ruleDiffs = response.data.data;
-          })
-          .catch(this.alertOrNotifyResponse);
+        return;
+      }
+      try {
+        const response = await compareComponents(this.baseComponent.id, this.diffComponent.id);
+        // Response is { data: {…}, meta: {…} }; unwrap.
+        this.ruleDiffs = response.data.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
       }
     },
     updateSettings: function (setting, value) {

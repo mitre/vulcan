@@ -30,7 +30,7 @@ module DocsSite
   # Dependencies first: the documentation tree has its own manifest, and the
   # application's own install does not reach into it.
   BUILD_COMMANDS = [
-    'yarn install --frozen-lockfile',
+    'yarn install --immutable',
     'yarn build'
   ].freeze
 

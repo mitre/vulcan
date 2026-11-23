@@ -256,7 +256,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'fails with invalid ZIP' do
         result = import_archive('not a zip file', target_project)
         expect(result).not_to be_success
-        expect(result.errors.first).to match(/Invalid ZIP file/)
+        expect(result.errors.first).to include('Invalid ZIP file')
       end
 
       it 'fails when manifest.json is missing' do
@@ -278,7 +278,7 @@ RSpec.describe Import::JsonArchiveImporter do
 
         result = import_archive(zip_data, target_project)
         expect(result).not_to be_success
-        expect(result.errors.first).to match(/Invalid JSON/)
+        expect(result.errors.first).to include('Invalid JSON')
       end
     end
 
@@ -370,7 +370,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'fails with conflict error' do
         result = import_archive(single_backup_zip, target_project)
         expect(result).not_to be_success
-        expect(result.errors.first).to match(/already exists/)
+        expect(result.errors.first).to include('already exists')
       end
     end
 
@@ -420,7 +420,7 @@ RSpec.describe Import::JsonArchiveImporter do
         modified_zip = modify_manifest_srg(single_backup_zip, 'NONEXISTENT-SRG-ID-12345')
         result = import_archive(modified_zip, target_project)
         expect(result).not_to be_success
-        expect(result.errors.first).to match(/Required SRG not found/)
+        expect(result.errors.first).to include('Required SRG not found')
       end
     end
 

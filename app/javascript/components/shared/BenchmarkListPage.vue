@@ -137,12 +137,13 @@ export default {
         });
       }
     },
-    loadItems() {
-      getBenchmarkList(this.apiPath)
-        .then(({ data }) => {
-          this.items = data;
-        })
-        .catch(this.alertOrNotifyResponse);
+    async loadItems() {
+      try {
+        const { data } = await getBenchmarkList(this.apiPath);
+        this.items = data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };
