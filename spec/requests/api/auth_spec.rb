@@ -258,6 +258,80 @@ RSpec.describe 'Api::Auth' do
     end
   end
 
+  # A sign-in must hand the new user a session of their own. The sharp edge is
+  # the OIDC id_token: SessionsController#destroy sends session[:id_token] to
+  # the provider as id_token_hint, so a token the previous occupant left
+  # behind would travel in a logout the NEW user performs. The AC-8 consent
+  # acknowledgment is the previous occupant's too, and must not excuse the new
+  # user from the banner. Devise's require_no_authentication keeps the HTML
+  # sign-in anonymous, so only this endpoint can be reached this way.
+  describe 'POST /api/auth/login into a session another user already owns' do
+    let(:provider) { oidc_test_provider }
+    let(:previous_user) { create(:user, provider: provider.to_s, uid: 'okta-previous-occupant') }
+
+    after { reset_oidc_mock }
+
+    def sign_in_previous_user_via_oidc
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+        provider: provider.to_s, uid: previous_user.uid,
+        info: { name: previous_user.name, email: previous_user.email },
+        credentials: { id_token: 'previous-occupant-id-token' }, extra: { raw_info: {} }
+      )
+      post "/users/auth/#{provider}"
+      follow_redirect!
+    end
+
+    it 'does not leave the previous user OIDC id_token in the new user session' do
+      sign_in_previous_user_via_oidc
+      expect(session[:id_token]).to eq('previous-occupant-id-token')
+
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(session[:id_token]).to be_nil
+    end
+
+    # The consequence the leak produces: the new user's sign-out would be
+    # redirected to the provider carrying the PREVIOUS user's id_token_hint.
+    it 'does not send the new user sign-out to the provider with the previous user id_token' do
+      # Discovery off, so the Okta-shaped fallback logout URL is built from
+      # the configured issuer without reaching the network.
+      allow(Settings.oidc).to receive(:discovery).and_return(false)
+      sign_in_previous_user_via_oidc
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      delete '/users/sign_out'
+
+      expect(response.location.to_s).not_to include('id_token_hint')
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    # AC-8: the banner is acknowledged per session occupant. An
+    # acknowledgment made by the previous user is not the new user's.
+    it 'does not carry the previous user consent acknowledgment to the new user' do
+      sign_in_previous_user_via_oidc
+      post '/consent/acknowledge'
+      expect(session[:consent_acknowledged_at]).to be_present
+
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(session[:consent_acknowledged_at]).to be_nil
+    end
+
+    it 'signs the new user in, so the endpoint still does its job' do
+      sign_in_previous_user_via_oidc
+
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response.parsed_body['id']).to eq(user.id)
+      get '/api/auth/me', as: :json
+      expect(response.parsed_body['id']).to eq(user.id)
+    end
+  end
+
   describe 'DELETE /api/auth/logout after a password sign-in' do
     # Same reset as the HTML sign-out: the whole session goes, including the
     # authenticity token, auth_method and the consent acknowledgment.

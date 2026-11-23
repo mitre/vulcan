@@ -422,6 +422,24 @@ class ApplicationController < ActionController::Base
     "#{exception.message} Please contact an administrator if you believe this message is in error."
   end
 
+  # AC-8: a sign-in must not make the consent acknowledgment be given twice.
+  # The acknowledgment is recorded against the session and a sign-in replaces
+  # the session, so the timestamp is carried across it — but only when the
+  # session's own anonymous visitor is the one signing in. An acknowledgment
+  # left behind by a previous occupant belongs to that user, and inheriting it
+  # would let the new user skip the banner. Devise's require_no_authentication
+  # makes the HTML sign-in anonymous by construction, so the occupancy check
+  # only ever changes the outcome for Api::AuthController#login, which has no
+  # such guard. run_callbacks: false reads the session user without running
+  # the fetch hooks, which on a timed-out session would sign the caller out
+  # and throw (the same reason Devise's own sign_out reads it that way).
+  def preserving_consent_acknowledgment
+    previous_occupant = warden.user(scope: :user, run_callbacks: false)
+    consent_at = session[:consent_acknowledged_at] unless previous_occupant
+    yield
+    session[:consent_acknowledged_at] = consent_at if consent_at.present?
+  end
+
   # Every interactive sign-in rotates the session's authenticity token, as
   # the form login does. Devise's CSRF cleaner runs only for the
   # :authentication event, and Warden records a plain sign_in as :set_user,

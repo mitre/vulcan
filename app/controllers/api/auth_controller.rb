@@ -54,8 +54,18 @@ module Api
         # the old user without running the fetch callbacks, so a timed-out
         # or superseded session neither throws from those hooks nor makes
         # sign_in return early as "already signed in", which would keep the
-        # stale session.
-        sign_out(:user)
+        # stale session. It is warden.logout(:user) though: it drops the
+        # previous occupant's warden keys (and runs their session_traceable /
+        # session_limitable revocations) but does NOT reset the session, so
+        # everything else they left behind would become the new user's —
+        # session[:id_token] above all, which SessionsController#destroy
+        # sends to the OIDC provider as the new user's id_token_hint. Devise's
+        # require_no_authentication keeps the HTML sign-in anonymous, so this
+        # endpoint is the only one that has to reset the session itself.
+        preserving_consent_acknowledgment do
+          sign_out(:user)
+          reset_session
+        end
         sign_in(user)
         session[:auth_method] = :local
         render json: CurrentUserBlueprint.render(user)
