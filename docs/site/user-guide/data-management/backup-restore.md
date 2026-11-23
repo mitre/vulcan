@@ -8,33 +8,46 @@ Backups use **JSON Archive** format — a ZIP file containing:
 
 ```
 project-name-backup.zip
-├── manifest.json              # Archive metadata + component list
-├── project.json               # Project name, description, visibility
-├── component-name/
-│   ├── component.json         # Component fields (name, prefix, version, etc.)
-│   ├── rules.json             # All rules with full field data
-│   ├── satisfactions.json     # Rule satisfaction relationships
-│   └── reviews.json           # Review history (optional)
-└── component-name-2/
-    └── ...
+├── manifest.json                      # Archive metadata + component list
+├── project.json                       # Project name, description, visibility,
+│                                      #   metadata and memberships
+├── components/
+│   ├── Component-Name-V1R2/
+│   │   ├── component.json             # Component fields (name, prefix, version, …)
+│   │   ├── rules.json                 # All rules with full field data
+│   │   ├── satisfactions.json         # Rule satisfaction relationships
+│   │   └── reviews.json               # Review history
+│   └── Another-Component-V1R1/
+│       └── ...
+└── srgs/                              # Base SRG XML, when Include base SRGs is on
+    └── General_Purpose_Operating_System-V3R3.xml
 ```
+
+A single-component export skips the `components/` level and puts the four
+JSON files at the archive root.
 
 Every field is preserved exactly as stored in the database. No lossy format conversion.
 
 ## Creating a Backup
 
 1. Navigate to the **Project** page
-2. Click the **Export** button
+2. Click the **Download** button
 3. Select **Backup** as the purpose
 4. **JSON Archive** format is auto-selected
-5. Optionally check **Include project memberships**
+5. Leave **Include base SRGs** checked (the default) if the archive may be
+   restored on another instance — it bundles each component's source SRG XML
+   so the target does not need those SRGs already loaded
 6. Select which components to include (or all)
 7. Click **Export**
 
 The browser downloads a `.zip` file.
 
-::: tip Include Memberships
-When checked, backup includes a `memberships.json` file listing each member's email and role. On restore, existing users are matched by email and granted the same roles. Users not found on the target instance are skipped.
+::: tip Memberships
+Every archive carries the project's memberships inside `project.json`, as a
+list of email, name and role — there is no separate `memberships.json`. On
+restore you choose whether to apply them; existing users are matched by
+email and granted the same role, and users not found on the target instance
+are skipped.
 :::
 
 ## Restoring Into an Existing Project
@@ -45,21 +58,23 @@ Use this to add components from a backup into a project that already exists.
 2. Click **New Component**
 3. Select **Restore From Backup**
 4. Upload the ZIP file
-5. Choose whether to include reviews and memberships
-6. Click **Preview** to see what will be imported
+5. Choose whether to include **review history** and **project memberships**
+6. Click **Preview Import** to see what will be imported
 
 ### Component Selection
 
 The preview step shows each component from the archive with its rule count:
 
-| Component | Rules | Status |
-|-----------|-------|--------|
-| Photon OS 4 | 203 | Ready to import |
-| Windows Server 2025 | 275 | Name conflict — auto-renamed |
+Each row carries the component's name in an editable field, its rule count,
+and a status marker:
 
-- **No conflict**: Checked by default, imports as-is
-- **Name conflict**: Component name already exists in the project. Auto-renamed with "(restored)" suffix. You can edit the name inline before importing.
-- Uncheck any component you don't want to import
+- **Ready** — a green check. Checked by default, imports as-is.
+- **`name taken`** — a component of that name already exists in the project.
+  The name field is pre-filled with a "(restored)" suffix; edit it inline
+  before importing.
+- **`name required`** — you cleared the name field; fill it in to proceed.
+
+Uncheck any component you don't want to import.
 
 Click **Import** to proceed with the selected components.
 
@@ -71,15 +86,19 @@ Use this to clone or migrate a project to a new instance.
 2. Click the **New Project** dropdown arrow
 3. Select **From Backup**
 4. Upload the ZIP file
-5. Edit the project name, description, and visibility (pre-filled from the archive)
-6. Choose whether to include reviews and memberships
-7. Click **Preview** to see the summary
+5. Type a project name — **Preview** stays disabled until you do. The
+   archive's own name shows as the field's placeholder.
+6. Choose whether to include review history and project memberships
+7. Click **Preview** to see the summary. Description and visibility are
+   filled in from the archive at this point.
 8. Click **Create Project**
 
 Vulcan creates a new project, imports all components, and redirects you to the new project page.
 
-::: info Name Conflicts
-If a project with the same name already exists, the name is pre-filled with a "(restored)" suffix. You can change it to anything before creating.
+::: info Project Names
+Vulcan does not check the new project's name against existing projects and
+does not rename it — two projects may share a name. The "(restored)" suffix
+applies to *component* names inside an existing project, not to projects.
 :::
 
 ## Export Pre-flight Warnings
@@ -99,12 +118,16 @@ These modes exclude NYD rules from output (DISA does not accept NYD as a valid s
 | Component fields (name, prefix, version, title, etc.) | Yes | Yes |
 | Rules (all fields including InSpec code) | Yes | Yes |
 | Rule satisfaction relationships | Yes | Yes |
-| Reviews and review history | Optional | Optional |
-| Project memberships | Optional | Optional (matched by email) |
-| SRG association | By SRG ID | Matched to existing SRG on target |
+| Reviews and review history | Yes | Optional |
+| Project memberships | Yes | Optional (matched by email) |
+| SRG association | By SRG ID and version | Matched on the target, falling back to another release of the same SRG |
 
 ::: warning SRG Requirement
-The target instance must have the same SRGs loaded. If a component references an SRG that doesn't exist on the target, the import will fail with an error identifying the missing SRG.
+The target instance needs the component's base SRG. An archive exported with
+**Include base SRGs** (the default) carries that XML and auto-imports it —
+the preview says how many base SRGs it will add. Otherwise the target must
+already have it: a different release of the same SRG will do, but if nothing
+matches, the import fails with an error naming the missing SRG.
 :::
 
 ## Use Cases
