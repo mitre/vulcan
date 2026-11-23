@@ -25,6 +25,7 @@ SRG components (see the [SRG Authoring Workflow](./srg-authoring)) publish diffe
 - **The published document is XCCDF, not a spreadsheet** — there is no spreadsheet intermediary and no two-tier public/CUI split. The SRG XCCDF is the single published artifact.
 - **Only Applicable requirements publish.** Not Applicable requirements and their justifications stay on the component as the working record; Not Yet Determined requirements block release entirely.
 - **Releasing an SRG component** generates its XCCDF and stores it in Vulcan's SRG catalog, where it becomes a base for STIG components. An SRG component's XCCDF export produces the same published-SRG shape.
+- **Not every purpose applies.** An SRG component can be exported as a Working Copy (CSV or Excel), a publication draft (XCCDF) or a Backup. DISA Vendor Submission and InSpec have no SRG meaning and are not offered.
 
 ## How Vulcan's Export Purposes Map to the Process
 
@@ -35,10 +36,10 @@ table maps each purpose to its place in the DISA process:
 
 | Purpose | DISA role | What the mode enforces |
 |---------|-----------|------------------------|
-| **DISA Vendor Submission** | The vendor deliverable | Exactly the 17 DISA template columns; STIGID blank (DISA fills it during finalization); Check/Fix blank for non-AC statuses; VulnDiscussion and Severity blank for NA; NYD rules excluded (not a DISA-recognized status) |
+| **DISA Vendor Submission** | The vendor deliverable | Exactly the 17 DISA template columns, as an Excel workbook; STIGID blank (DISA fills it during finalization); Check/Fix blank for non-AC statuses; VulnDiscussion and Severity blank for NA; Mitigation, Artifact Description and Status Justification blank at the statuses where the matrix leaves them out; NYD rules excluded (not a DISA-recognized status) |
 | **STIG-Ready Publish Draft** | Matches the public STIG tier | AC rules only, rules satisfied by other rules excluded — the shape DISA publishes on Cyber Exchange (XCCDF, InSpec) |
-| **Working Copy** | Not a DISA artifact | Everything as authored, for internal review and round-trip editing (CSV, Excel) |
-| **Backup** | Not a DISA artifact | Full-fidelity archive for restore and migration (JSON) |
+| **Working Copy** | Not a DISA artifact | Everything as authored, for internal review and round-trip editing (CSV, Excel, InSpec) |
+| **Backup** | Not a DISA artifact | Full-fidelity archive for restore and migration (JSON Archive, delivered as a zip) |
 
 ::: tip Submission readiness
 Components containing only "Not Yet Determined" rules show a warning in DISA modes —

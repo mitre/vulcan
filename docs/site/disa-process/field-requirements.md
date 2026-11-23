@@ -178,7 +178,7 @@ The matrix above is the STIG vocabulary. SRG components use a different, three-s
 
 ## Vulcan Implementation Notes
 
-Vulcan enforces this matrix at two layers:
+Vulcan applies this matrix at two layers:
 
 - **In the editor**, field visibility per status is driven by the field-state model: Check and Fix are hidden for AIM, ADNM, and NA; Mitigation appears for ADNM; Artifact Description for AIM; Status Justification for AIM, ADNM, and NA.
-- **At export**, the **DISA Vendor Submission** purpose applies the blanking rules above regardless of what was authored: STIGID is always blank, Check/Fix are blanked for non-AC statuses, and VulnDiscussion and Severity are blanked for NA. Not Yet Determined rules are excluded entirely. The **Working Copy** purpose keeps everything as authored for internal round-trip editing — use Vendor Submission for the DISA deliverable. See [Export Requirements](./export-requirements).
+- **At export** — the only layer that truly enforces the matrix — the **DISA Vendor Submission** purpose applies the blanking rules above regardless of what was authored: STIGID is always blank, Check/Fix are blanked for non-AC statuses, and VulnDiscussion and Severity are blanked for NA. Not Yet Determined rules are excluded entirely. The **Working Copy** purpose keeps everything as authored for internal round-trip editing — use Vendor Submission for the DISA deliverable. See [Export Requirements](./export-requirements).
