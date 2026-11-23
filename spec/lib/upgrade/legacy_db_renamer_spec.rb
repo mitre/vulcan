@@ -96,7 +96,7 @@ RSpec.describe Upgrade::LegacyDbRenamer do
       it 'skips with manual-resolve warning' do
         result = renamer.call
         expect(result.skipped.size).to eq(1)
-        expect(result.skipped.first[:reason]).to match(/both exist/)
+        expect(result.skipped.first[:reason]).to include('both exist')
       end
     end
 
@@ -104,7 +104,7 @@ RSpec.describe Upgrade::LegacyDbRenamer do
       it 'skips with neither-exists reason' do
         result = renamer.call
         expect(result.skipped.size).to eq(1)
-        expect(result.skipped.first[:reason]).to match(/neither/)
+        expect(result.skipped.first[:reason]).to include('neither')
       end
     end
 
@@ -118,7 +118,7 @@ RSpec.describe Upgrade::LegacyDbRenamer do
         result = renamer.call
         expect(result.errors).to be_empty
         expect(result.skipped.size).to eq(1)
-        expect(result.skipped.first[:reason]).to match(/neither/)
+        expect(result.skipped.first[:reason]).to include('neither')
       end
     end
   end

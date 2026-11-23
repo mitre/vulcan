@@ -115,9 +115,8 @@ RSpec.describe Component do
         SQL
         # `execute` returns a PG::Result, not an AR relation; `.pluck`
         # doesn't apply.
-        # rubocop:disable Rails/Pluck
+        # rubocop:disable-next Rails/Pluck
         plan = ActiveRecord::Base.connection.execute(sql).map { |r| r['QUERY PLAN'] }.join("\n")
-        # rubocop:enable Rails/Pluck
         # The new partial index OR an equivalent btree should appear in
         # the plan. PostgreSQL may pick a sequential scan on tiny test
         # tables; we accept any of: the new index, sequential scan

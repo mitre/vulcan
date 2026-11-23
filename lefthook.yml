@@ -66,11 +66,11 @@ post-checkout:
     bundle-install:
       run: bundle check || bundle install
     yarn-install:
-      run: yarn install --frozen-lockfile 2>/dev/null || yarn install
+      run: yarn install --immutable 2>/dev/null || yarn install
 
 post-merge:
   commands:
     bundle-install:
       run: bundle check || bundle install
     yarn-install:
-      run: yarn install --frozen-lockfile 2>/dev/null || yarn install
+      run: yarn install --immutable 2>/dev/null || yarn install

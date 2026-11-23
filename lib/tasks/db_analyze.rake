@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Style/FormatStringToken
+# rubocop:disable-next Style/FormatStringToken
 namespace :db do
   desc 'Analyze serialization performance and identify bottlenecks'
   task analyze_serialization: :environment do
@@ -351,4 +351,3 @@ namespace :db do
     puts '=' * 70
   end
 end
-# rubocop:enable Style/FormatStringToken

@@ -54,7 +54,7 @@ RSpec.describe RequirementRelocation do
       record = described_class.new(source_rule: catalog_row, target_technology_token: 'CTR')
 
       expect(record).not_to be_valid
-      expect(record.errors[:source_rule].join).to match(/authored requirement of an SRG component/)
+      expect(record.errors[:source_rule].join).to include('authored requirement of an SRG component')
     end
 
     it 'rejects a stig-kind Rule as the source' do
@@ -63,7 +63,7 @@ RSpec.describe RequirementRelocation do
       record = described_class.new(source_rule_id: rule.id, target_technology_token: 'CTR')
 
       expect(record).not_to be_valid
-      expect(record.errors[:source_rule].join).to match(/must exist/)
+      expect(record.errors[:source_rule].join).to include('must exist')
     end
   end
 
@@ -76,7 +76,7 @@ RSpec.describe RequirementRelocation do
 
       executed.target_technology_token = 'GPOS'
       expect(executed.save).to be false
-      expect(executed.errors[:base].join).to match(/immutable/)
+      expect(executed.errors[:base].join).to include('immutable')
     end
 
     it 'permits the pending-to-executed transition once the source is tombstoned (the executor path)' do
@@ -150,7 +150,7 @@ RSpec.describe RequirementRelocation do
       record.declined_at = Time.current
       record.declined_by = requester
       expect(record.save).to be false
-      expect(record.errors[:adjudication_rationale].join).to match(/blank/)
+      expect(record.errors[:adjudication_rationale].join).to include('blank')
 
       record.adjudication_rationale = 'Requirement is out of scope for this SRG.'
       expect(record.save).to be true
@@ -164,7 +164,7 @@ RSpec.describe RequirementRelocation do
 
       declined.target_technology_token = 'GPOS'
       expect(declined.save).to be false
-      expect(declined.errors[:base].join).to match(/immutable/)
+      expect(declined.errors[:base].join).to include('immutable')
     end
 
     it 'rejects a record that is both declined and executed' do
@@ -175,7 +175,7 @@ RSpec.describe RequirementRelocation do
                                    adjudication_rationale: 'No.', executed_at: Time.current)
 
       expect(record).not_to be_valid
-      expect(record.errors[:base].join).to match(/cannot be both declined and executed/)
+      expect(record.errors[:base].join).to include('cannot be both declined and executed')
     end
 
     it 'frees the source for a fresh proposal after a decline' do

@@ -54,7 +54,8 @@
 # - linear.api_key  → use LINEAR_API_KEY env var instead
 # - github.token    → use GITHUB_TOKEN env var instead
 
-sync.remote: "git+https://github.com/mitre/vulcan.git"
 prime:
     max-memory-chars: 27000
     max-memories: 37
+sync:
+    remote: "git+https://github.com/mitre/vulcan.git"
