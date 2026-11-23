@@ -29,6 +29,21 @@
 threads_count = ENV.fetch('RAILS_MAX_THREADS', 3)
 threads threads_count, threads_count
 
+# Cluster mode: run WEB_CONCURRENCY worker processes. Defaults to 0 (single
+# mode), so it is a no-op unless WEB_CONCURRENCY is set.
+web_concurrency = ENV.fetch('WEB_CONCURRENCY', 0).to_i
+workers web_concurrency
+
+# Preload so forked workers share the app copy-on-write; each reconnects its
+# own database pool after the fork.
+if web_concurrency.positive?
+  preload_app!
+
+  on_worker_boot do
+    ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
+  end
+end
+
 # Specifies the `port` that Puma will listen on to receive requests; default is 3000.
 port ENV.fetch('PORT', 3000)
 
