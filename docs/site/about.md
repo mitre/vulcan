@@ -14,7 +14,7 @@ Vulcan models the STIG creation process, facilitating the alignment of security 
 Manages the complete workflow between vendors and sponsors for STIG development.
 
 ### 🔍 InSpec Integration
-Write and test validation code locally or across SSH, AWS, and Docker targets directly within the platform.
+Author each requirement's InSpec control body beside its check and fix text, then export the component as a runnable InSpec profile.
 
 ### 📊 Control Management
 Track control status, revision history, and relationships between requirements and implementations.
