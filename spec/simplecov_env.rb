@@ -5,8 +5,11 @@ require 'simplecov'
 module SimpleCovEnv
   module_function
 
+  # CI always measures coverage. COVERAGE=1 asks for it locally without the
+  # rest of what CI=true implies (eager loading, headless Capybara, the LDAP
+  # system spec being skipped), which is what the docs have always documented.
   def start!
-    return unless ENV['CI']
+    return unless ENV['CI'] || ENV['COVERAGE']
 
     configure_profile
 

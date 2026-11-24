@@ -31,8 +31,8 @@ bundle exec rspec spec/models/user_spec.rb:42
 # Run frontend tests
 yarn test:unit
 
-# Run tests with coverage (SimpleCov only starts when CI is set)
-CI=true rake spec:parallel
+# Run tests with coverage
+COVERAGE=true rake spec:parallel
 
 # Run only failed tests
 bundle exec rspec --only-failures
@@ -504,22 +504,24 @@ Coverage is configured in `spec/simplecov_env.rb` and started from the top of
 SimpleCovEnv.start!
 ```
 
-`start!` returns immediately unless `ENV['CI']` is set, so a local run carries
-no coverage overhead. When it does run it tracks `{app,lib}/**/*.rb`, filters
-`config/initializers/`, `db/fixtures/` and `/vendor/ruby/`, and groups
-Controllers, Helpers, Mailers and Models. `minimum_coverage` is 0 — coverage is
-reported, not enforced — and `merge_timeout` is a year so that results from
-separate parallel runs still merge.
+`start!` returns immediately unless `CI` or `COVERAGE` is set, so an ordinary
+local run carries no coverage overhead. When it does run it tracks
+`{app,lib}/**/*.rb`, filters `config/initializers/`, `db/fixtures/` and
+`/vendor/ruby/`, and groups Controllers, Helpers, Mailers and Models.
+`minimum_coverage` is 0 — coverage is reported, not enforced — and
+`merge_timeout` is a year so that results from separate parallel runs still
+merge.
 
-`CI` is not coverage-only — it also makes `config.eager_load` true, runs
-Capybara headless, and skips the LDAP system spec. Setting it locally therefore
-gives a CI-shaped run, which is usually what you want when reading coverage.
+Use `COVERAGE=true` locally. `CI=true` also turns coverage on, but it is not
+coverage-only: it makes `config.eager_load` true, runs Capybara headless and
+skips the LDAP system spec. Set `CI` when you want a CI-shaped run, and
+`COVERAGE` when you only want the report.
 
 ### Viewing Coverage
 
 ```bash
 # Generate coverage report
-CI=true bundle exec rspec
+COVERAGE=true bundle exec rspec
 
 # Open in browser
 open coverage/index.html
