@@ -177,8 +177,9 @@ See [Authorization Architecture](authorization.md) for details.
 
 ### Monitoring
 - Health check endpoints (`/up`, `/health_check`, `/health_check/database`, `/health_check/migrations`)
-- Container-friendly logging (`RAILS_LOG_TO_STDOUT`, optional `STRUCTURED_LOGGING` for JSON output)
-- Rack::Attack rate limiting on login and file upload endpoints
+- Container-friendly logging: the production environment logs to stdout unconditionally, so no env var
+  turns it on. `STRUCTURED_LOGGING` switches the OIDC auto-discovery events — and only those — to JSON
+- Rack::Attack rate limiting on the login, upload, comment, reaction and API-token endpoints (`config/initializers/rack_attack.rb` is the authoritative list)
 
 ## Deployment Architecture
 
