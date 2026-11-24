@@ -30,8 +30,10 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 ### Latest Release: [v2.4.2](https://github.com/mitre/vulcan/releases/tag/v2.4.2)
 
 ```bash
-# Pull the latest Docker image
-docker pull mitre/vulcan:v2.4.2
+# Pull the latest released Docker image.
+# Released tags carry no leading "v" (the release workflow strips it), so pin a
+# specific release as mitre/vulcan:<x.y.z> when you need a fixed version.
+docker pull mitre/vulcan:release-latest
 
 # Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml

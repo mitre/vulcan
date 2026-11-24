@@ -36,6 +36,53 @@ RSpec.describe 'release infrastructure' do
     end
   end
 
+  # README.md's `docker pull` line carried `mitre/vulcan:v2.4.2` for two
+  # releases. No workflow has ever pushed a "v"-prefixed tag: release.yml
+  # strips the prefix (`version=${raw#v}`) before handing TAG_SUFFIXES to bake,
+  # and mainline.yml pushes the git sha plus `latest`. A reader following the
+  # README got "manifest unknown". Nothing pinned that line, so it rotted
+  # silently every release.
+  #
+  # The guard derives the forbidden shape from the workflow instead of from a
+  # hardcoded tag, and covers the pages that instruct a reader to pull or run
+  # an image: the README and the deployment/getting-started trees. The
+  # maintainer-facing release runbook is excluded because it documents the
+  # workflow's own inputs rather than telling an operator what to pull.
+  describe 'documented image tags' do
+    let(:install_facing_docs) do
+      [
+        'README.md',
+        'docs/site/index.md',
+        'docs/site/getting-started/**/*.md',
+        'docs/site/deployment/**/*.md'
+      ]
+    end
+
+    it 'release.yml still strips the leading "v" before tagging the image' do
+      release = Rails.root.join('.github/workflows/release.yml').read
+      expect(release).to include('version=${raw#v}'),
+                         'release.yml no longer strips the "v" prefix — if released tags are now ' \
+                         'v-prefixed, this guard and the install docs both need updating.'
+    end
+
+    it 'no install-facing page tells a reader to pull a v-prefixed tag' do
+      offenders = install_facing_docs.flat_map { |glob| Rails.root.glob(glob) }
+                                     .uniq
+                                     .reject { |path| path.basename.to_s == 'release-process.md' }
+                                     .flat_map do |path|
+        relative = path.relative_path_from(Rails.root)
+        path.read.lines.each_with_index.filter_map do |line, index|
+          "#{relative}:#{index + 1}: #{line.strip}" if line.match?(%r{mitre/vulcan:v\d})
+        end
+      end
+
+      expect(offenders).to eq([]),
+                           'these pages reference an image tag no workflow publishes — released ' \
+                           'tags have no "v" prefix (use mitre/vulcan:release-latest, or ' \
+                           "mitre/vulcan:<x.y.z> to pin):\n#{offenders.join("\n")}"
+    end
+  end
+
   describe 'API version controller' do
     it 'Api::VersionController exists and skips authentication' do
       expect(defined?(Api::VersionController)).to eq('constant')

@@ -140,7 +140,7 @@ spec:
       containers:
       - name: vulcan-web
         # Released tags carry no leading "v" (the release workflow strips it):
-        # mitre/vulcan:2.4.2, or mitre/vulcan:release-latest for the newest release.
+        # mitre/vulcan:<x.y.z>, or mitre/vulcan:release-latest for the newest release.
         # Pin a specific version in production.
         image: mitre/vulcan:release-latest
         imagePullPolicy: Always
