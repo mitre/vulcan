@@ -2,68 +2,71 @@
 
 ## Overview
 
-Releases are tag-triggered. Push a semver tag to master and the automation handles the rest:
+A Vulcan release is **two human steps and one automated step**:
 
-1. `release.yml` fires on the tag, runs git-cliff to generate a changelog, creates the GitHub Release
-2. `ci.yml` fires on `release: [published]`, runs the full test suite, then builds and pushes multi-arch Docker images
+1. **You** land a version-bump pull request on `master` (version files, changelog, release-notes page) and wait for CI to go green.
+2. **You** publish a GitHub Release in the web UI. Publishing creates the tag.
+3. **`release.yml`** reacts to the `release: published` event: it verifies the tag is releasable, builds the multi-arch image, pushes it to DockerHub, submits an SBOM, and opens a merge request against Vulcan's Iron Bank project on repo1.
 
-You do not manually create draft releases, write changelog entries, or push Docker images.
+That is the whole process. There is nothing else, and nothing happens before step 2.
 
-## CI/CD Workflow Files
+::: warning Pushing a tag by itself does nothing
+No workflow has a `push: tags:` trigger. `git push origin v2.5.0` fires zero workflows. The tag is a *consequence* of publishing the release, not the thing that starts it.
+:::
 
-| File | Purpose |
-|------|---------|
-| `ci.yml` | Lint, test (frontend + backend shards), SonarCloud, Docker release on publish |
-| `release.yml` | Tag-triggered: generate changelog via git-cliff, create GitHub Release, commit CHANGELOG.md |
-| `docs.yml` | Deploy VitePress documentation to GitHub Pages |
-| `dependabot.yml` | Auto-approve and merge Dependabot PRs |
+### What is automated
+
+- Building `linux/amd64` + `linux/arm64` images and pushing `mitre/vulcan:<x.y.z>` and `mitre/vulcan:release-latest`.
+- Checking, before the build, that the tag is semver, that `VERSION` at the tagged commit equals the tag, that the commit is on `master`, and that `ci.yml` concluded success for that exact commit.
+- SBOM generation and submission to the GitHub dependency graph.
+- Opening the Iron Bank merge request on repo1 with both per-architecture digests.
+
+### What is **not** automated
+
+- Choosing the version.
+- Editing any version file. No bot touches `VERSION`, `package.json`, the docs, or `CHANGELOG.md`.
+- Writing `CHANGELOG.md` entries or the release-notes page. Both are hand-authored prose. No workflow invokes git-cliff; `cliff.toml` is a local drafting aid only (see [Drafting the changelog](#drafting-the-changelog)).
+- Creating the GitHub Release or its body text.
+- Merging the Iron Bank merge request. A human on the repo1 side does that.
+
+## CI/CD workflow files
+
+| File | Trigger | Purpose |
+|------|---------|---------|
+| `ci.yml` | push to `master`, pull requests | Lint, security scans, frontend + backend test shards, SonarCloud. **Has no release trigger and does not build images.** |
+| `release.yml` | `release: published`, `workflow_dispatch` | Verifies the tag, then publishes the stable image and the Iron Bank merge request. |
+| `mainline.yml` | push to `master`, `workflow_dispatch` | Publishes the bleeding-edge image (`<git-sha>` + `latest`) and a merge request against the separate `vulcan-mainline` repo1 project. |
+| `docker-publish.yml` | `workflow_call` only | The shared build-and-push implementation that `release.yml` and `mainline.yml` both call. Not runnable on its own. |
+| `docs.yml` | push to `master` touching `docs/`, pull requests, `workflow_dispatch` | Builds and deploys the VitePress site to GitHub Pages. |
+| `dependabot.yml` | `pull_request_target` | Auto-approves and merges Dependabot pull requests. |
 
 ## Prerequisites
 
-- Push access to the Vulcan repository (to push tags)
-- All work merged to master via PRs with conventional commit messages
-- CI passing on master
+**Access**
 
-## Conventional Commits
+- Write access to `mitre/vulcan` (to merge the bump PR and publish the Release).
 
-git-cliff reads commit messages to build the changelog. Every commit merged to master should follow the [Conventional Commits](https://www.conventionalcommits.org) format:
+**Organization secrets and variables** — these live at the MITRE organization level, not on the repository, so they will not appear under the repository's own Actions settings:
 
-```
-<type>[optional scope]: <description>
+| Name | Used for |
+|------|----------|
+| `vars.DOCKER_USER` | DockerHub login |
+| `secrets.DOCKER_PAT` | DockerHub login |
+| `secrets.SAF_IRONBANK_REPO1_PAT` | repo1 merge request |
+| `secrets.SAF_IRONBANK_REPO1_USERNAME` | repo1 merge request |
+| `vars.DOCKER_BUILD_CLOUD_ENDPOINT` | Optional. Overrides the Docker Build Cloud builder endpoint; defaults to `mitre/mitre-builder`. |
 
-Examples:
-feat: add OIDC provider support
-fix: correct rule export when description is blank
-refactor: extract XCCDF parser into dedicated class
-test: add request specs for component export
-docs: document AC-8 consent TTL configuration
-chore: update Ruby to 3.4.10
-```
+**Docker Build Cloud.** The image compiles Ruby and jemalloc from source for two architectures. On a GitHub-hosted runner with QEMU emulation that takes longer than any reasonable job budget; it is the reason the 2.4.0, 2.4.1 and 2.4.2 publishes were all cancelled on timeout and why no `2.4.0` or `2.4.2` image exists on DockerHub. The publish therefore builds on Docker Build Cloud unconditionally, which takes **2-4 minutes**. If the MITRE Build Cloud subscription lapses, the buildx setup step fails within a minute — see [Troubleshooting](#build-cloud-is-unavailable).
 
-### How commit types map to changelog sections
+## Semver guidance
 
-| Commit prefix | Changelog section |
-|---------------|------------------|
-| `feat:` | Added |
-| `fix:` | Fixed |
-| `refactor:`, `perf:` | Changed |
-| `test:` | Tests |
-| `doc:`, `docs:` | Documentation |
-| `chore:` | Maintenance |
-| `style:`, `ci:` | (skipped — not shown in changelog) |
-| commit body contains `security` | Security |
+- **Patch** (`v2.4.x`) — bug fixes, dependency updates, maintenance.
+- **Minor** (`v2.x.0`) — new user-facing features.
+- **Major** (`vX.0.0`) — breaking changes. Discuss with the team first.
 
-Commits that do not follow conventional format are filtered out of the changelog entirely (`filter_unconventional = true` in `cliff.toml`).
+## Step-by-step release
 
-### Semver guidance
-
-Choose the version bump based on what is in the release:
-
-- **Patch** (v2.3.x): bug fixes, dependency updates, maintenance
-- **Minor** (v2.x.0): new user-facing features
-- **Major** (vX.0.0): breaking changes — discuss with the team first
-
-## Step-by-Step Release Process
+The worked example below releases **v2.5.0**. Substitute your version everywhere.
 
 ### 1. Confirm master is ready
 
@@ -72,168 +75,234 @@ git checkout master
 git pull origin master
 ```
 
-Verify CI is green on master in the [Actions tab](https://github.com/mitre/vulcan/actions).
+Check that CI is green on `master` in the [Actions tab](https://github.com/mitre/vulcan/actions). A release cannot be published from a red commit — `release.yml` refuses.
 
-### 2. Update the VERSION file
-
-The VERSION file is the single source of truth. Edit it directly:
+### 2. Create the version-bump branch
 
 ```bash
-# Example: bumping from v2.3.1 to v2.3.2
-echo "v2.3.2" > VERSION
+git checkout -b release/v2.5.0
 ```
 
-Sync the version to `package.json`:
+### 3. Bump the version files
+
+`VERSION` is the single source of truth. Edit it, then sync the derived file:
 
 ```bash
-bundle exec rake version:sync
+echo "v2.5.0" > VERSION
+bundle exec rake version:sync          # rewrites package.json
 ```
 
-Commit and push:
+`lib/vulcan/version.rb` reads `VERSION` at load time and strips the `v` prefix, so `Vulcan::VERSION == "2.5.0"`. **It needs no edit.**
+
+### 4. Update the four docs version surfaces
+
+`spec/config/docs_version_consistency_spec.rb` compares every "latest release" surface in the docs against `Vulcan::VERSION`. Bumping `VERSION` without these four edits turns four examples red, so CI fails on your bump commit.
+
+| # | File | What to change |
+|---|------|----------------|
+| 1 | `docs/site/index.md` | The `::: info Current Version` block (around line 92): the `**v2.5.0**` version, the release month, the one-line summary, and the `[View Release Notes →](/release-notes/v2.5.0)` link. |
+| 2 | `docs/site/release-notes/index.md` | Move the old entry from `## Current Release` down into `## Previous Releases`, and add the new `- **[v2.5.0](v2.5.0)** — …` bullet under `## Current Release`. |
+| 3 | `docs/.vitepress/config.mjs` | In the version nav dropdown (around line 219): change `text: "v2.4.2"` to `text: "v2.5.0"`, repoint `{ text: "Release Notes", link: "/release-notes/v2.5.0" }`, and insert the previous version as its own item below it. |
+| 4 | `docs/site/release-notes/v2.5.0.md` | **Create this page.** The spec asserts `docs/site/release-notes/v<version>.md` exists. Copy the structure of the previous release's page. |
+
+Verify before pushing:
 
 ```bash
-git add VERSION package.json
-git commit -m "chore: bump version to v2.3.2"
-git push origin master
+bundle exec rspec spec/config/docs_version_consistency_spec.rb \
+                  spec/config/release_infrastructure_spec.rb
 ```
 
-Wait for CI to pass on that commit before tagging.
+### 5. Write the changelog entry
 
-### 3. Tag and push
+`CHANGELOG.md` is hand-authored. Replace the empty `## [Unreleased]` heading with a dated section for the release, keeping the [Keep a Changelog](https://keepachangelog.com) sections already in use (`Added`, `Fixed`, `Changed`, plus `Behavior changes` when there are any), and leave a fresh empty `## [Unreleased]` above it:
+
+```markdown
+## [Unreleased]
+
+## [v2.5.0] - 2026-11-30
+
+### Added
+
+- **Short bold summary.** Then the detail a self-hoster needs.
+```
+
+`spec/config/release_infrastructure_spec.rb` asserts a `## [v<version>]` section exists for the current version, so an unwritten changelog fails CI.
+
+The release-notes page from step 4 is the user-facing version of the same content: more context, upgrade warnings, and anything a self-hoster must do before upgrading.
+
+#### Drafting the changelog
+
+`cliff.toml` configures [git-cliff](https://git-cliff.org) to group conventional commits into Keep a Changelog sections. **No workflow invokes it** — it is there so you can draft locally:
 
 ```bash
-git tag v2.3.2
-git push origin v2.3.2
+brew install git-cliff
+git cliff --unreleased --strip header
 ```
 
-That push triggers everything. No further manual steps are required.
+Treat the output as raw material. Bare commit subjects are not release notes; rewrite them into prose that explains the user-visible change. Conventional commit prefixes (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) make that draft useful, which is reason enough to keep using them.
 
-### 4. What happens automatically
-
-**`release.yml`** (triggered by the tag push):
-
-1. Checks out full history (`fetch-depth: 0`)
-2. Runs git-cliff with `--latest --strip header` to generate the changelog for this release only
-3. Creates a GitHub Release with the generated changelog as the body
-4. Runs git-cliff again for the full CHANGELOG.md
-5. Commits `CHANGELOG.md` back to master via `github-actions[bot]`
-
-**`ci.yml`** (triggered by `release: [published]`):
-
-1. Runs the full lint + frontend + backend test suite
-2. If all jobs pass, runs `docker-release`:
-   - Logs in to DockerHub
-   - Uses Docker Build Cloud (`mitre/mitre-builder`) for native multi-arch builds
-   - Builds `linux/amd64` and `linux/arm64` images
-   - Pushes `mitre/vulcan:v2.3.2` and `mitre/vulcan:release-latest` to DockerHub
-   - Generates SBOM (SPDX format) and submits to GitHub dependency graph
-
-> **Tag convention:** `release-latest` is the moving pointer to the most recent
-> stable release; `latest` is the bleeding-edge build of `master` published by
-> `mainline.yml` on every push. Use `release-latest` (or a pinned `vX.Y.Z`) for
-> production; `latest` only for trying the newest unreleased code.
-
-### 5. Verify the release
-
-1. Check [Actions](https://github.com/mitre/vulcan/actions) — `release.yml` and `ci.yml` runs should both be green
-2. Check [Releases](https://github.com/mitre/vulcan/releases) — new release should exist with changelog populated
-3. Check [DockerHub](https://hub.docker.com/r/mitre/vulcan/tags) — new version tag and `release-latest` should be present
-4. Pull and smoke-test the image:
+### 6. Open the bump PR and merge it
 
 ```bash
-docker pull mitre/vulcan:v2.3.2
-
-# Quick sanity check — should print the version and exit
-docker run --rm mitre/vulcan:v2.3.2 bundle exec rails runner "puts Vulcan::VERSION"
+git add VERSION package.json CHANGELOG.md \
+        docs/site/index.md \
+        docs/site/release-notes/index.md \
+        docs/site/release-notes/v2.5.0.md \
+        docs/.vitepress/config.mjs
+git commit -s -m "chore: bump version to v2.5.0"
+git push origin release/v2.5.0
 ```
 
-## How Version Files Stay in Sync
+Open a PR to `master`, get it reviewed, and merge it. **Wait for `ci.yml` to finish green on the resulting `master` commit.** This is not optional politeness: `release.yml` queries that run's conclusion and refuses to publish without it.
 
-| File | How it's updated |
-|------|-----------------|
-| `VERSION` | **You update this manually** before tagging |
-| `package.json` | Run `bundle exec rake version:sync` after editing VERSION |
-| `lib/vulcan/version.rb` | Reads VERSION at load time — no editing needed |
-| `CHANGELOG.md` | git-cliff commits this automatically after each tag push |
+### 7. Publish the GitHub Release
 
-`lib/vulcan/version.rb` strips the `v` prefix from VERSION so it can be used as a clean Ruby constant (`Vulcan::VERSION # => "2.3.2"`).
+Go to [Releases → Draft a new release](https://github.com/mitre/vulcan/releases/new).
 
-## Hotfix / Emergency Release
+| Field | Value |
+|-------|-------|
+| **Choose a tag** | Type `v2.5.0` and select **Create new tag: v2.5.0 on publish** |
+| **Target** | `master` — specifically the bump commit from step 6 |
+| **Title** | `v2.5.0` |
+| **Description** | The release-notes content, or a summary plus a link to `/release-notes/v2.5.0` |
 
-For a critical fix that must go out without waiting for pending work:
+Click **Publish release**. Publishing creates the tag and fires `release.yml`.
+
+::: tip Ordering matters
+The bump commit must be on `master` before you publish. `release.yml` compares `VERSION` at the tagged commit to the tag name, so publishing a release whose target predates the bump fails the verify job rather than pushing a mislabelled image. If you prefer to create the tag yourself with `git tag`, do it after the bump commit lands and then select the existing tag here — but the push alone still publishes nothing.
+:::
+
+### 8. Watch the run
+
+`release.yml` runs two jobs:
+
+- **Verify the tag is releasable** (seconds) — semver tag, `VERSION` matches the tag, commit is an ancestor of `master`, `ci.yml` succeeded for that commit.
+- **publish** (2-4 minutes) — Build Cloud multi-arch build and push, SBOM submission, per-architecture digest resolution, Iron Bank merge request.
+
+Expect the whole run to finish in **under 10 minutes**. If it is still running at 25 minutes it will be cancelled by the job timeout; see [Troubleshooting](#troubleshooting).
+
+## Verifying the release worked
+
+Do all four. The 2.4.2 release was marked published on GitHub while no image was ever pushed, and nobody noticed for three months because nobody checked the registry.
+
+**1. The workflow run is green.** Both jobs in [Actions → Release](https://github.com/mitre/vulcan/actions/workflows/release.yml). A `cancelled` conclusion means the timeout fired — the release is **not** complete.
+
+**2. The image tag exists on DockerHub, with both architectures.** Check [hub.docker.com/r/mitre/vulcan/tags](https://hub.docker.com/r/mitre/vulcan/tags), or from a shell:
 
 ```bash
-# Start from the last release tag
-git checkout v2.3.1
-git checkout -b hotfix/v2.3.2
-
-# Make the fix
-# ... edit files ...
-git add <files>
-git commit -m "fix: correct critical issue in rule export"
-
-# Update VERSION
-echo "v2.3.2" > VERSION
-bundle exec rake version:sync
-git add VERSION package.json
-git commit -m "chore: bump version to v2.3.2"
-
-# Push the branch and open a PR to master
-git push origin hotfix/v2.3.2
-# Merge the PR to master after review
-
-# Then tag from master
-git checkout master
-git pull origin master
-git tag v2.3.2
-git push origin v2.3.2
+docker manifest inspect mitre/vulcan:2.5.0 \
+  | grep -o '"architecture": "[^"]*"' | sort -u
+# expect: "architecture": "amd64"  and  "architecture": "arm64"
 ```
 
-This follows the same tag-triggered flow. There is no separate hotfix workflow.
+Note the tag has **no `v` prefix**. See [Image tags](#image-tags).
 
-## Docker Image Details
+**3. `release-latest` moved to the new release.** The digests must match:
+
+```bash
+docker buildx imagetools inspect mitre/vulcan:2.5.0        --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect mitre/vulcan:release-latest --format '{{.Manifest.Digest}}'
+```
+
+**4. Smoke-test the image.**
+
+```bash
+docker pull mitre/vulcan:2.5.0
+docker run --rm mitre/vulcan:2.5.0 bundle exec rails runner "puts Vulcan::VERSION"
+# expect: 2.5.0
+```
+
+**5. The Iron Bank merge request opened.** Confirm the "Open the Iron Bank merge request" step is green, then check the [Vulcan project on repo1](https://repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan) (project `17073`) for a new merge request from `Automated Vulcan Release`. It should update `hardening_manifest.yaml` so `tags[0]`, the `org.opencontainers.image.version` label, and both `resources` entries point at `2.5.0` and at the amd64/arm64 digests by `sha256:`. A human on the repo1 side reviews and merges it; the release is not "on Iron Bank" until they do.
+
+## Image tags
+
+| Tag | Published by | Meaning |
+|-----|--------------|---------|
+| `mitre/vulcan:2.5.0` | `release.yml` | Immutable stable release. **No `v` prefix.** |
+| `mitre/vulcan:release-latest` | `release.yml` | Moving pointer to the most recent stable release. **Use this, or a pinned version, in production.** |
+| `mitre/vulcan:<git-sha>` | `mainline.yml` | A specific `master` commit. |
+| `mitre/vulcan:latest` | `mainline.yml` | Bleeding-edge `master`. **Not a release.** Only for trying unreleased code. |
+
+::: danger The image tag is not the git tag
+The git tag is `v2.5.0`; the image tag is `2.5.0`. `release.yml` strips the prefix (`version=${raw#v}`), so **`mitre/vulcan:v2.5.0` does not exist and never has.** Releases up to v2.2.1 used v-prefixed image tags; everything from 2.3.3 onward does not. `docker pull` against a v-prefixed tag will tell you the image is missing when it is actually there.
+:::
 
 - **Registry**: [hub.docker.com/r/mitre/vulcan](https://hub.docker.com/r/mitre/vulcan)
-- **Architectures**: `linux/amd64`, `linux/arm64` (built natively via Docker Build Cloud)
-- **Tags**: `v2.3.2` (immutable) and `latest` (updated on each release)
-- **Base**: Red Hat UBI 9 Minimal with Ruby 3.4.13 + jemalloc (compiled from source, YJIT enabled)
+- **Architectures**: `linux/amd64` and `linux/arm64`, each built on a native Build Cloud machine
+- **Base**: Red Hat UBI 9 Minimal, with Ruby and jemalloc compiled from source and YJIT enabled. The exact Ruby and Node versions come from `.ruby-version` and `.nvmrc` via `docker-bake.hcl`; `spec/config/toolchain_version_consistency_spec.rb` keeps them aligned.
+- **Iron Bank** currently pulls the amd64 image only, even though both architectures are published and both digests are recorded in the manifest.
 
 ## Troubleshooting
 
-**The release.yml run failed — no GitHub Release was created.**
+### The verify job failed
 
-Check the Actions log. Common causes:
-- Malformed `cliff.toml` (TOML syntax error)
-- `GITHUB_TOKEN` permissions — the workflow requires `contents: write`
+The error annotation names the problem:
 
-If the release was not created, delete the tag, fix the issue, and re-push:
+| Message | Fix |
+|---------|-----|
+| `… is not a vMAJOR.MINOR.PATCH release tag` | Delete the release and the tag; re-publish with a `vX.Y.Z` tag. |
+| `VERSION at v2.5.0 reads '…'` | The tag points at the wrong commit. Land the bump commit on `master` first, delete the tag, and re-publish against it. |
+| `… is not on master` | The release target was a branch or fork commit. Re-publish targeting `master`. |
+| `No completed push-event CI run found for …` | `ci.yml` has not finished for that commit. Wait for it, then re-run `release.yml` (below). |
+| `CI for … concluded 'failure'` | Fix `master`, re-run `ci.yml` to green on that same commit, then re-run `release.yml`. Do not bypass this. |
+
+### The publish failed or was cancelled — re-run it
+
+The GitHub Release and its tag already exist, so do **not** cut a new version. Re-dispatch the workflow against the existing tag:
+
+1. [Actions → Release](https://github.com/mitre/vulcan/actions/workflows/release.yml) → **Run workflow**
+2. Set **Use workflow from** to the tag (`v2.5.0`), or leave the default branch and enter `v2.5.0` in the **tag** input
+3. **Run workflow**
+
+The verify job runs again, so this is safe: it cannot publish something the `release: published` path would have refused.
+
+### Build Cloud is unavailable
+
+If the "Set up Docker Buildx (Docker Build Cloud)" step fails, the builder endpoint or the organization's Build Cloud subscription is the problem. Check `vars.DOCKER_BUILD_CLOUD_ENDPOINT` (or the `mitre/mitre-builder` default) and the subscription status before anything else.
+
+There is deliberately **no emulated fallback**. A silently-selected QEMU path is what broke three consecutive releases: it cannot finish inside a sane budget, so it consumed the whole job timeout and then cancelled. If Build Cloud is genuinely gone and a release must ship, that is a decision to make explicitly — an emulated multi-arch build of this image is roughly a 45-90 minute job and needs `timeout_minutes` raised to match, which is a reviewed change to `docker-publish.yml`, not something to improvise during a release.
+
+### The image tag is missing from DockerHub but the run is green
+
+Registry propagation can lag by seconds; the digest-resolution step already retries for 25 seconds. If a tag is still absent minutes later, re-run the workflow — pushing the same tag again is idempotent.
+
+### The Iron Bank step failed
+
+The image is already on DockerHub at this point; only the repo1 merge request is missing. Re-running the whole workflow is the simplest fix and is safe. If the step fails on authentication, the `SAF_IRONBANK_REPO1_PAT` / `SAF_IRONBANK_REPO1_USERNAME` organization secrets need attention — repo1 personal access tokens expire.
+
+## Hotfix / emergency release
+
+Same process, shorter path. The release still comes from `master`.
 
 ```bash
-git tag -d v2.3.2
-git push origin :refs/tags/v2.3.2
-# fix the issue, then:
-git tag v2.3.2
-git push origin v2.3.2
+git checkout -b hotfix/v2.5.1 master
+
+# make the fix
+git add <files>
+git commit -s -m "fix: correct critical issue in rule export"
+
+# bump, as in steps 3-5 above
+echo "v2.5.1" > VERSION
+bundle exec rake version:sync
+# ... edit the four docs surfaces, CHANGELOG.md, and
+# ... create docs/site/release-notes/v2.5.1.md
+
+git add VERSION package.json CHANGELOG.md docs/
+git commit -s -m "chore: bump version to v2.5.1"
+git push origin hotfix/v2.5.1
 ```
 
-**The GitHub Release was created but Docker images were not pushed.**
+Open the PR, merge to `master`, wait for green CI, then publish the release as in step 7. There is no separate hotfix workflow and no way to skip the CI gate.
 
-The `docker-release` job in `ci.yml` only runs when a release is published. If tests fail, Docker is skipped. Fix the test failures on master, then:
+## How version files stay in sync
 
-- You cannot re-trigger docker-release automatically without publishing a new release
-- Either publish a patch release with the fix, or manually publish the Docker image using the Dockerfile
-
-**`CHANGELOG.md` has a merge conflict after the bot commit.**
-
-git-cliff pushes to master directly from the tag workflow. If another commit landed on master simultaneously, the push may fail. The changelog content is still in the GitHub Release body. Re-run `git-cliff` locally to regenerate:
-
-```bash
-# Install git-cliff if needed
-brew install git-cliff
-
-# Regenerate full changelog
-git-cliff --config cliff.toml --output CHANGELOG.md
-git add CHANGELOG.md
-git commit -m "docs: regenerate CHANGELOG.md"
-git push origin master
-```
+| File | How it is updated | Enforced by |
+|------|-------------------|-------------|
+| `VERSION` | **You edit it.** Single source of truth, `v`-prefixed. | — |
+| `package.json` | `bundle exec rake version:sync` | `release_infrastructure_spec.rb` |
+| `lib/vulcan/version.rb` | Reads `VERSION` at load, strips the `v`. No edit needed. | `release_infrastructure_spec.rb` |
+| `CHANGELOG.md` | **You write it.** | `release_infrastructure_spec.rb` |
+| `docs/site/index.md` | **You edit it.** | `docs_version_consistency_spec.rb` |
+| `docs/site/release-notes/index.md` | **You edit it.** | `docs_version_consistency_spec.rb` |
+| `docs/.vitepress/config.mjs` | **You edit it.** | `docs_version_consistency_spec.rb` |
+| `docs/site/release-notes/v<version>.md` | **You create it.** | `docs_version_consistency_spec.rb` |
