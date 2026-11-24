@@ -298,12 +298,17 @@ See `ENVIRONMENT_VARIABLES.md` for complete list. Key ones:
 
 `config/vulcan.default.yml` is an ERB template that reads environment variables with fallback defaults. Accessed in code via `Settings.section.key`.
 
-### Pre-commit Hooks (.overcommit.yml)
+### Git Hooks (`lefthook.yml`)
 
-- RuboCop with autocorrect
-- ESLint for JavaScript/Vue
-- BundleCheck, RailsSchemaUpToDate
-- YamlSyntax, JsonSyntax validation
+Lefthook, installed via brew (not bundled). It replaced overcommit, which
+raced on `index.lock` in worktree setups because it used `git stash`.
+
+- `pre-commit`: RuboCop (autocorrect, restages fixes), ESLint (no `--fix`, to
+  match `lint:ci`), YAML and JSON syntax, OpenAPI bundle freshness, merge-conflict markers
+- `commit-msg`: non-empty, subject capitalized or a conventional-commit
+  prefix, no trailing period, **subject under 73 characters**
+- `pre-push`: RuboCop, `yarn lint:ci`, Brakeman, OpenAPI bundle freshness
+- `post-checkout` / `post-merge`: `bundle install` and `yarn install`
 
 ---
 

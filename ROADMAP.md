@@ -17,27 +17,31 @@ This document outlines the complete modernization strategy for the Vulcan applic
 
 ## Phase 0: Rails 8 and Infrastructure Modernization (COMPLETED)
 
+> Version numbers are deliberately absent from this section. It records what
+> was *done*, not what is currently installed, and the patch digits it used to
+> quote went stale on every release. `.ruby-version`, `.nvmrc` and
+> `Gemfile.lock` are the source of truth for what the application runs today.
+
 ### Objectives
-- ✅ Complete Rails 8.0.2.1 upgrade
+- ✅ Complete the Rails 8 upgrade
 - ✅ Complete the migration from Webpacker to jsbundling-rails
-- ✅ Upgrade Ruby to 3.3.9 and Node.js to 22 LTS
+- ✅ Move to a current Ruby and the Node.js Active LTS line
 - ✅ Fix all security vulnerabilities and pass SonarCloud quality gate
 - ✅ Establish OIDC auto-discovery for simplified authentication
 
 ### Completed Tasks
-- [x] Progressive Rails upgrade: 7.0.8.7 → 7.1.5.2 → 7.2.2.2 → 8.0.2.1
-- [x] Ruby upgrade: 3.1.6 → 3.3.9
-- [x] Node.js upgrade: 16 → 22 LTS
+- [x] Progressive Rails upgrade: 7.0 → 7.1 → 7.2 → 8.0, then 8.1
+- [x] Ruby upgrade: 3.1 → 3.4
+- [x] Node.js upgrade: 16 → Active LTS
 - [x] Migrate from Webpacker to jsbundling-rails with esbuild
 - [x] Fix SQL injection vulnerability in Component#duplicate_rules
 - [x] Implement Rails 8 strong parameters `expect` API
 - [x] Update RSpec Rails from 4.0 to 6.0
 - [x] OIDC auto-discovery implementation
 - [x] Docker image optimization (6.5GB → 1.76GB)
-- [x] All 198 tests passing
 
 ### Success Criteria Achieved
-- ✅ Rails 8.0.2.1 running in production
+- ✅ Rails 8 running in production
 - ✅ All assets build with jsbundling-rails (Webpacker removed)
 - ✅ All features function identically to pre-migration
 - ✅ Security vulnerabilities fixed (SonarCloud passing)
@@ -49,7 +53,7 @@ This document outlines the complete modernization strategy for the Vulcan applic
 - **SCOPE**: Identify any critical technical debt to address immediately
 - **PRIORITIZATION**: Use security findings to help determine next phase ordering
 
-## Phase 0.5: Development Process Enhancement
+## Phase 0.5: Development Process Enhancement (COMPLETED)
 
 ### Objectives
 - Establish standardized linting and code quality tools
@@ -58,12 +62,12 @@ This document outlines the complete modernization strategy for the Vulcan applic
 - Create baseline metrics for code quality and security
 
 ### Tasks
-- [ ] Implement standardized linting for Ruby and JavaScript
-- [ ] Set up automated static analysis tools (Brakeman, ESLint, etc.)
-- [ ] Configure security scanning in CI pipeline
-- [ ] Establish test coverage requirements and tools
-- [ ] Create pre-commit hooks for consistency
-- [ ] Document code standards and best practices
+- [x] Implement standardized linting for Ruby and JavaScript (RuboCop, ESLint)
+- [x] Set up automated static analysis tools (Brakeman, bundler-audit, ESLint)
+- [x] Configure security scanning in CI pipeline
+- [x] Establish test coverage requirements and tools (SimpleCov; reported, not enforced)
+- [x] Create pre-commit hooks for consistency (`lefthook.yml`)
+- [x] Document code standards and best practices (`docs/site/development/`)
 - [ ] Set up performance monitoring baselines
 
 ### Success Criteria
@@ -159,8 +163,9 @@ This document outlines the complete modernization strategy for the Vulcan applic
 
 ### Tasks
 - [ ] Conduct Vue component architecture review
-- [ ] Introduce proper state management (Pinia recommended)
-- [ ] Create services layer for API interactions
+- [x] Introduce proper state management (Pinia; see
+  [State Management](development/state-management))
+- [x] Create services layer for API interactions (`app/javascript/api/`)
 - [ ] Refactor components to follow consistent patterns
 - [ ] Consider TypeScript adoption for enhanced reliability
 - [ ] Improve error handling and recovery
@@ -262,7 +267,7 @@ Based on user feedback (Issue #654) comparing Vulcan to Heimdall2's administrati
 - **INTEGRATION**: Assess integration with existing authentication systems
 
 ### Dependencies
-- **BLOCKING**: Phase 0 completion (Webpacker migration, Ruby 3.2+ upgrade)
+- **BLOCKING**: Phase 0 completion (Webpacker migration, Ruby upgrade) — done
 - **REQUIRED**: Rails 7+ and modern asset pipeline
 - **OPTIONAL**: Redis/Memcached for enhanced settings caching
 
