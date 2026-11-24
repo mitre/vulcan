@@ -89,6 +89,7 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # filenames. Static documentation — any authenticated user can view.
   'api_docs#spec' => 'Static OpenAPI spec file (YAML) — any authenticated user',
   'api_docs#spec_json' => 'Static OpenAPI spec file (JSON) — any authenticated user',
+  'api/auth#csrf' => 'Public token issuer for the caller\'s own session — skip_before_action :authenticate_user!',
   'api/auth#me' => 'Returns current session user — ownership-scoped by definition',
   'api/auth#login' => 'Public login endpoint — skip_before_action :authenticate_user!',
   'api/auth#logout' => 'Session teardown — ownership-scoped by definition',

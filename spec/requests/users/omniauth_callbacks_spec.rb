@@ -145,6 +145,33 @@ RSpec.describe 'Remember Me Functionality' do
     end
   end
 
+  describe 'OmniAuth login CSRF token' do
+    # Devise resets the CSRF token only for a sign-in recorded as an
+    # authentication event, so the callback must pass that event to
+    # sign_in_and_redirect, as the form login does through warden.
+    let(:email) { 'omniauth-csrf@example.com' }
+
+    before do
+      OmniAuth.config.test_mode = true
+      mock_oidc_auth(email: email, name: 'CSRF Rotation User', uid: 'csrf-rotation-123')
+    end
+
+    after { reset_oidc_mock }
+
+    it 'rotates the session CSRF token on sign-in' do
+      get '/api/auth/csrf', as: :json
+      pre_login_token = session[:_csrf_token]
+      expect(pre_login_token).to be_present
+
+      post oidc_callback_path
+      expect(response).to redirect_to(root_path)
+
+      get '/api/auth/csrf', as: :json
+      expect(session[:_csrf_token]).to be_present
+      expect(session[:_csrf_token]).not_to eq(pre_login_token)
+    end
+  end
+
   describe 'failure reason wording' do
     # An unreachable or errored directory fails with the distinct
     # :ldap_error type (no longer reported as invalid credentials). The

@@ -143,11 +143,13 @@ module Users
     def omniauth_provider_conflict(exception)
       auth = request.env['omniauth.auth']
       if auth
+        # String keys, so every reader does plain lookups whatever the session
+        # serializer does with symbols.
         session[:pending_link] = {
-          provider: auth.provider.to_s,
-          uid: auth.uid.to_s,
-          email: auth.info.email,
-          name: auth.info.name
+          'provider' => auth.provider.to_s,
+          'uid' => auth.uid.to_s,
+          'email' => auth.info.email,
+          'name' => auth.info.name
         }
         Rails.logger.info "Provider conflict — pending link stored for #{auth.info.email} via #{auth.provider}"
         flash.alert = exception.message

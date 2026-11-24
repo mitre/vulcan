@@ -7,16 +7,12 @@ module Api
   # Provides:
   # - Consistent JSON error handling
   # - Correct HTTP status codes (401 vs 403)
-  # - Skips HTML-only before_actions
+  # - Never runs the HTML layout callbacks
   # - Returns 401 JSON instead of redirecting for unauthenticated requests
   #
   # All API controllers should inherit from this instead of ApplicationController
   #
   class BaseController < ApplicationController
-    # Skip HTML-only actions - APIs don't need navigation or notifications
-    skip_before_action :setup_navigation
-    skip_before_action :check_access_request_notifications
-
     def authenticate_user!(*)
       if api_token_request? || user_signed_in?
         super
@@ -45,6 +41,14 @@ module Api
       render_page_out_of_range(exception)
     end
 
+    # 422 Unprocessable Content - Failed authenticity (CSRF) check. The
+    # inherited handler negotiates on Accept, so Accept: */* (curl's
+    # default) or no Accept header would match its HTML branch and get a
+    # flash and a redirect. Rails has already logged the failure.
+    rescue_from ActionController::InvalidAuthenticityToken do |_exception|
+      render_invalid_authenticity_token
+    end
+
     # 403 Forbidden - Authenticated but not authorized. Same rich body as
     # the HTML controllers' JSON branch (who-to-ask contacts included) —
     # this rescue exists only to skip format negotiation, never to serve a
@@ -53,6 +57,14 @@ module Api
     # Note: 401 Unauthorized is for unauthenticated requests (handled above)
     rescue_from NotAuthorizedError do |exception|
       render_authorization_denied_json(exception)
+    end
+
+    private
+
+    # API responses never render the HTML layout, so its callbacks never run
+    # here, even for a browser that opens an /api/* URL with Accept: text/html.
+    def layout_request?
+      false
     end
   end
 end

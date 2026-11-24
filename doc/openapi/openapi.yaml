@@ -48,6 +48,8 @@ tags:
   - name: System
     description: Version and health check endpoints
 paths:
+  /api/auth/csrf:
+    $ref: paths/api_auth_csrf.yaml
   /api/auth/me:
     $ref: paths/api_auth_me.yaml
   /api/auth/login:

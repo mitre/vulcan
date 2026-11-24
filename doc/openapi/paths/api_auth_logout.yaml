@@ -27,5 +27,7 @@ delete:
                 message: Signed out successfully
     '401':
       $ref: ../components/responses/Unauthorized.yaml
+    '422':
+      $ref: ../components/responses/InvalidAuthenticityToken.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

@@ -10,6 +10,44 @@ RSpec.describe 'Locked user notifications' do
   let(:admin) { create(:user, admin: true) }
   let(:regular_user) { create(:user) }
 
+  # The navbar data feeds only the HTML layout, so a JSON request to an HTML
+  # controller spends no queries on the locked-user list or the
+  # access-request notifications.
+  describe 'JSON requests to an HTML controller' do
+    it 'run no locked-user or access-request query for an admin' do
+      create(:user, locked_at: 1.hour.ago, failed_attempts: 3)
+      sign_in admin
+      queries = []
+      collect = ->(*, payload) { queries << payload[:sql] }
+
+      ActiveSupport::Notifications.subscribed(collect, 'sql.active_record') do
+        get stigs_path, as: :json
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(queries.grep(/locked_at/)).to be_empty
+      expect(queries.grep(/project_access_requests/)).to be_empty
+    end
+  end
+
+  # API responses never render the layout, whatever the Accept header.
+  describe 'API requests from a browser (Accept: text/html)' do
+    it 'run no locked-user or access-request query for an admin' do
+      create(:user, locked_at: 1.hour.ago, failed_attempts: 3)
+      sign_in admin
+      queries = []
+      collect = ->(*, payload) { queries << payload[:sql] }
+
+      ActiveSupport::Notifications.subscribed(collect, 'sql.active_record') do
+        get '/api/auth/me', headers: { 'Accept' => 'text/html' }
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(queries.grep(/locked_at/)).to be_empty
+      expect(queries.grep(/project_access_requests/)).to be_empty
+    end
+  end
+
   describe 'navbar locked_users data' do
     context 'when lockout is enabled and user is admin' do
       before do

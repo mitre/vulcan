@@ -1,0 +1,10 @@
+description: Authenticity token for the caller's current session, to be sent as X-CSRF-Token on state-changing requests.
+type: object
+additionalProperties: false
+required:
+  - csrf_token
+properties:
+  csrf_token:
+    type: string
+    description: URL-safe Base64 authenticity token, masked differently on every response, bound to the session cookie that accompanies this response. Reset on POST /api/auth/login; DELETE /api/auth/logout resets the whole session.
+    example: abc123def456

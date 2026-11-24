@@ -215,6 +215,7 @@ Rails.application.routes.draw do
 
   # API namespace for JSON endpoints
   namespace :api do
+    get 'auth/csrf', to: 'auth#csrf'
     get 'auth/me', to: 'auth#me'
     post 'auth/login', to: 'auth#login'
     delete 'auth/logout', to: 'auth#logout'

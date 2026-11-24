@@ -8,9 +8,10 @@
 # another location" instead of a generic message. HTML / navigational
 # requests fall through to Devise's default redirect + flash, unchanged.
 #
-# Shares its problem-document builder, how_to_authenticate block, and
-# not-authenticated copy with ErrorRendering (the controller-side concern) so
-# the two surfaces never drift.
+# Shares its problem-document builder with ErrorRendering and its
+# how_to_authenticate block and not-authenticated copy with
+# AuthenticationErrorRendering (the controller-side concerns) so the two
+# surfaces never drift.
 class SessionAwareFailureApp < Devise::FailureApp
   # Per-cause problem content. Any cause not listed here (including nil and
   # future warden symbols) falls back to the shared not-authenticated body.
@@ -32,11 +33,11 @@ class SessionAwareFailureApp < Devise::FailureApp
   # the cause → document mapping is unit-testable without a full Rack env.
   def self.problem_for(message)
     cause = CAUSES.fetch(message&.to_sym) do
-      { type: :not_authenticated, title: 'Not authenticated', detail: ErrorRendering::NOT_AUTHENTICATED_DETAIL }
+      { type: :not_authenticated, title: 'Not authenticated', detail: AuthenticationErrorRendering::NOT_AUTHENTICATED_DETAIL }
     end
     ErrorRendering.problem_document(
       type: cause[:type], title: cause[:title], status: :unauthorized,
-      detail: cause[:detail], how_to_authenticate: ErrorRendering::HOW_TO_AUTHENTICATE
+      detail: cause[:detail], how_to_authenticate: AuthenticationErrorRendering::HOW_TO_AUTHENTICATE
     )
   end
 

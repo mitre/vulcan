@@ -6,7 +6,10 @@ Vulcan supports two authentication methods: session-based (browser) and Personal
 
 When logged in through the web interface, your session cookie authenticates API requests automatically. This is how the Vue frontend communicates with the Rails backend — no extra configuration needed.
 
-CSRF protection is active for session-based requests. The Rails UJS adapter handles CSRF tokens automatically for forms and AJAX.
+CSRF protection is active for session-based requests. `ApplicationController` declares `protect_from_forgery with: :exception`, so a session-authenticated POST, PUT, PATCH or DELETE must send the session's authenticity token in the `X-CSRF-Token` header. Pages rendered by the Rails layout read it from the `csrf-token` meta tag, and the Vue frontend's API client sends it on every request. A same-origin frontend that Rails does not render the layout for — one served by a dev server that proxies to Rails, for example — fetches it from `GET /api/auth/csrf`, which needs no authentication and returns `{ "csrf_token": "..." }` with `Cache-Control: no-store`. Same-origin is a requirement, not a recommendation: the session cookie is `SameSite=Lax`, so the browser does not send it on a cross-site POST, and Rails' forgery-protection origin check refuses any request whose `Origin` differs from Vulcan's own base URL however valid the token is. A frontend on a different origin cannot authenticate by session at all — it must use a [Personal Access Token](#personal-access-tokens-programmatic).
+
+- `POST /api/auth/login` resets the token and `DELETE /api/auth/logout` resets the whole session, so fetch a new token after either.
+- A missing or stale token is refused with 422 and the [`invalid_authenticity_token`](./errors#invalid_authenticity_token) problem. Fetch a fresh token and retry once.
 
 The same applies to this reference's "Try it out" playground when the documentation is
 served inside a running instance: **reads** are authenticated by your session

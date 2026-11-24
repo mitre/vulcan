@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
   include ErrorRendering
+  include AuthenticationErrorRendering
   include AuthorizationDisclosure
   include ApiTokenAuthenticatable
   include LocalLoginEnforceable
@@ -17,9 +18,15 @@ class ApplicationController < ActionController::Base
   # session requests stay protected. Verified by api_token_auth_spec.
   protect_from_forgery with: :exception
 
-  before_action :setup_navigation, :authenticate_user!
-  before_action :check_access_request_notifications
-  before_action :check_locked_user_notifications
+  # The navigation, access-request and locked-user callbacks only fill data
+  # the HTML layout renders (application.html.haml); API clients read the
+  # same lists from GET /api/navigation. They run for HTML requests alone:
+  # each one reads current_user, and on a timed-out or superseded session
+  # that fetch signs the caller out and throws, which must not happen on a
+  # JSON request that needs no sign-in (GET /api/auth/csrf, login).
+  before_action :setup_navigation, if: :layout_request?
+  before_action :authenticate_user!
+  before_action :check_access_request_notifications, :check_locked_user_notifications, if: :layout_request?
 
   # AC-8: Determines if the current user must acknowledge consent.
   # Returns true when consent is enabled and the session has no valid acknowledgment.
@@ -52,6 +59,12 @@ class ApplicationController < ActionController::Base
   end
 
   rescue_from NotAuthorizedError, with: :not_authorized
+
+  # Declared after StandardError for the same reason as NotAuthorizedError:
+  # a failed authenticity check is a client error the caller can repair
+  # (fetch a token, retry once), so it must not fall into helpful_errors'
+  # generic 500 toast where it is indistinguishable from a server fault.
+  rescue_from ActionController::InvalidAuthenticityToken, with: :invalid_authenticity_token
 
   # toast helper. The Vue frontend's
   # alertOrNotifyResponse (useToast) reads `{ toast: { title, message, variant } }`
@@ -251,6 +264,23 @@ class ApplicationController < ActionController::Base
     mailer.project_access_action(action, *).deliver_now if access_request_action?(action)
   end
 
+  # Every interactive sign-in rotates the session's authenticity token, as
+  # the form login does. Devise's CSRF cleaner runs only for the
+  # :authentication event, and Warden records a plain sign_in as :set_user,
+  # so this sets the event once for every caller (sign_in_and_redirect and
+  # Devise's own sign_up go through here). A stateless sign-in (store: false,
+  # the personal-access-token path) has no session token to rotate, and an
+  # event the caller names is kept.
+  #
+  # Defined above `private` deliberately: Devise::Controllers::SignInOut#sign_in
+  # is public, and narrowing it here would narrow it on every descendant,
+  # including the DeviseController subclasses.
+  def sign_in(resource_or_scope, *args)
+    options = args.extract_options!
+    options[:event] ||= :authentication unless options[:store] == false
+    super(resource_or_scope, *args, options)
+  end
+
   private
 
   # Devise hook (documented override point): land on the sign-in page
@@ -373,6 +403,21 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # JSON callers get an RFC 9457 problem (422) they can act on. HTML callers
+  # still get a flash alert and a redirect back, as under helpful_errors, but
+  # the flash now names the cause instead of showing the exception message
+  # (admins) or the contact-an-administrator line (everyone else). Rails logs
+  # the failed check itself (log_warning_on_csrf_failure).
+  def invalid_authenticity_token(_exception)
+    respond_to do |format|
+      format.html do
+        flash.alert = FORM_SESSION_EXPIRED_MESSAGE
+        redirect_back_or_to(root_path)
+      end
+      format.any { render_invalid_authenticity_token }
+    end
+  end
+
   # HTML+JSON "not found" negotiation. Both a genuine ActiveRecord::RecordNotFound
   # and a concealed authorization denial render through this one method, so a
   # concealed 404 is byte-identical to a true miss on every format.
@@ -394,6 +439,30 @@ class ApplicationController < ActionController::Base
     "#{exception.message} Please contact an administrator if you believe this message is in error."
   end
 
+  # AC-8: a sign-in must not make the consent acknowledgment be given twice.
+  # The acknowledgment is recorded against the session and a sign-in replaces
+  # the session, so the timestamp is carried across it — but only when the
+  # session's own anonymous visitor is the one signing in. An acknowledgment
+  # left behind by a previous occupant belongs to that user, and inheriting it
+  # would let the new user skip the banner. Devise's require_no_authentication
+  # makes the HTML sign-in anonymous by construction, so the occupancy check
+  # only ever changes the outcome for Api::AuthController#login, which has no
+  # such guard. run_callbacks: false reads the session user without running
+  # the fetch hooks, which on a timed-out session would sign the caller out
+  # and throw (the same reason Devise's own sign_out reads it that way).
+  def preserving_consent_acknowledgment
+    previous_occupant = warden.user(scope: :user, run_callbacks: false)
+    consent_at = session[:consent_acknowledged_at] unless previous_occupant
+    yield
+    session[:consent_acknowledged_at] = consent_at if consent_at.present?
+  end
+
+  # True when the response will render the HTML layout. Api::BaseController
+  # answers false for every request, whatever its Accept header.
+  def layout_request?
+    request.format.html?
+  end
+
   def setup_navigation
     @navigation = []
     @navigation += helpers.base_navigation if current_user
@@ -402,7 +471,6 @@ class ApplicationController < ActionController::Base
   def check_access_request_notifications
     @access_requests = []
     return @access_requests unless user_signed_in?
-    return @access_requests if request.format.json? # Skip for API calls — navbar not rendered
 
     # Single query: find all access requests for projects where current user is admin.
     # Replaces N+1 loop that called can_admin_project? + eager_load per project.

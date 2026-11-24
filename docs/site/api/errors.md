@@ -28,6 +28,10 @@ The `Authorization` header carried a token that does not match any active person
 
 A sign-in attempt supplied an incorrect email or password.
 
+### account_locked
+
+A sign-in attempt named an account that is temporarily locked after too many failed sign-in attempts. Wait for the lock to expire and try again, or reset the password to unlock it.
+
 ### session_superseded
 
 You were signed out because this account signed in from another location. Only one active session per account is allowed at a time. Carries `how_to_authenticate`.
@@ -59,6 +63,10 @@ The request requires a scope (named in `detail`) that the presented token does n
 ### incorrect_password
 
 Creating or managing API tokens re-verifies your identity, and the current password provided does not match. The caller is already signed in — the re-verification challenge failed — so the status is 422, not 401.
+
+### invalid_authenticity_token
+
+A session-authenticated state-changing request (POST, PUT, PATCH, DELETE) carried no `X-CSRF-Token`, or a token that does not belong to the current session. Fetch a fresh token from `GET /api/auth/csrf`, send it in `X-CSRF-Token`, and retry once; a second failure is not a token problem. Requests authenticated with a personal access token are not subject to this check. Carries a legacy `toast` extension.
 
 ## Request errors (400 and 404)
 
