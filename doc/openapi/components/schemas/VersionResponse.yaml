@@ -23,7 +23,7 @@ properties:
   ruby:
     type: string
     description: Ruby interpreter version running the application.
-    example: 3.4.12
+    example: 3.4.13
   environment:
     type: string
     description: Current Rails environment.

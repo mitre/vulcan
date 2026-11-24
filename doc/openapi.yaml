@@ -364,7 +364,7 @@ paths:
                     name: Vulcan
                     version: 2.4.2
                     rails: 8.1.4
-                    ruby: 3.4.12
+                    ruby: 3.4.13
                     environment: production
         4XX:
           $ref: '#/components/responses/ErrorResponse'
@@ -7845,7 +7845,7 @@ components:
         ruby:
           type: string
           description: Ruby interpreter version running the application.
-          example: 3.4.12
+          example: 3.4.13
         environment:
           type: string
           description: Current Rails environment.

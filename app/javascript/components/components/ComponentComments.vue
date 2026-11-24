@@ -1010,19 +1010,15 @@ export default {
     onAdjudicated(payload) {
       this.updateRowInPlace(payload);
     },
-    // Fired after a triage decision that included a response_comment —
-    // server creates a child Review atomically. Bump the parent row's
-    // responses_count so CommentThread's watcher auto-refreshes.
+    // Fired after a triage decision that included a response_comment — the
+    // server created a child Review atomically. The count is NOT touched
+    // here: `triaged` fires first with the re-rendered parent, whose
+    // responses_count already includes this reply (ReviewBlueprint counts
+    // it after the create, in the same transaction), so incrementing would
+    // report two replies for one. All that is left is dropping the parent's
+    // cached thread, so the next expand shows the new reply.
     onTriageResponsePosted({ parentId }) {
-      const idx = this.rows.findIndex((r) => r.id === parentId);
-      if (idx < 0) return;
-      const row = this.rows[idx];
-      const newCount = (row.responses_count ?? 0) + 1;
-      this.rows.splice(idx, 1, {
-        ...row,
-        responses_count: newCount,
-        responsesCount: newCount,
-      });
+      this.commentsStore.invalidateReplies(parentId);
     },
     // admin hard-delete destroys the review entirely;
     // refresh the queue so the destroyed row (and its replies) disappear.
