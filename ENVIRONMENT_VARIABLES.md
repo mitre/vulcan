@@ -21,7 +21,8 @@ This document lists all environment variables that can be used to configure Vulc
 | `POSTGRES_USER` | PostgreSQL username (Docker init + database.yml) | `postgres` | `vulcan_user` |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker init + database.yml) | `postgres` | `secure_password` |
 | `POSTGRES_DB` | PostgreSQL database name (Docker container init only, not used by database.yml) | `vulcan_production` | `vulcan_prod` |
-| `PORT` | Application server (Puma) listen port | `3000` | `3001` |
+| `PORT` | Application server (Puma) listen port *inside* the process | `3000` | `3001` |
+| `VULCAN_PORT` | Host-side port the web container is published on by `docker-compose.yml` and `docker-compose.dev.yml`. The container always listens on 3000; this only changes the host side. | `3000` | `3001` |
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
@@ -468,15 +469,42 @@ Vulcan's production environment already logs to stdout, so the orchestration pla
 | `RAILS_ENV` | Rails environment | `development` | `production` |
 | `RAILS_FORCE_SSL` | Force HTTPS redirects. Rails defaults this to `true`, but `docker-compose.yml` overrides it to `false` for the HTTP quickstart; set it to `true` in `.env` once a reverse proxy terminates TLS. | `true` (Rails), `false` (compose) | `true` |
 | `RAILS_MAX_THREADS` | Puma threads per process and the matching DB connection pool size | `3` | `10` |
+| `WEB_CONCURRENCY` | Puma worker processes. Read by Puma itself, not by `config/puma.rb` — see the sizing note below. | `0` (single process) | `2` |
 | `RAILS_LOG_LEVEL` | Production log verbosity | `info` | `debug` |
 | `PIDFILE` | Puma pidfile path (unset = no pidfile) | - | `tmp/pids/server.pid` |
 | `SOLID_QUEUE_IN_PUMA` | Run the Solid Queue worker inside the Puma process | - | `true` |
 | `REDIS_URL` | Action Cable Redis connection | `redis://localhost:6379/1` | `redis://cache:6379/1` |
 
-`RAILS_LOG_TO_STDOUT` and `RAILS_SERVE_STATIC_FILES` are set by the production
-image but are **not read** by Vulcan: `config/environments/production.rb` logs
-to stdout and serves static files unconditionally. Setting them changes
-nothing.
+### Sizing `WEB_CONCURRENCY`
+
+`config/puma.rb` never calls `workers`, so it is easy to assume the variable
+does nothing. It is Puma's own default that reads it
+(`workers = ENV['WEB_CONCURRENCY']`, 0 when unset), and any value above 1 also
+turns on `preload_app`. So:
+
+- A bare `docker run` of the image gets a single Puma process, because nothing
+  in the image sets the variable.
+- **`docker compose up` does not.** `.env.production.example` ships
+  `WEB_CONCURRENCY=2`, and `docker-compose.yml` loads `.env` into the web
+  service, so a deployment built from the template boots in cluster mode with
+  two preloaded workers.
+- Heroku review apps from `app.json` get the same two workers, on a 512 MB
+  `basic` dyno.
+
+The consequence to plan for is connections and memory, not throughput:
+`config/database.yml` derives `pool` from `RAILS_MAX_THREADS` **per process**.
+The template's `RAILS_MAX_THREADS=5` with `WEB_CONCURRENCY=2` therefore opens
+10 database connections rather than 5, and runs two copies of the application.
+Size PostgreSQL's `max_connections` and the host's memory for
+`WEB_CONCURRENCY x RAILS_MAX_THREADS`, or comment `WEB_CONCURRENCY` out to run
+single-process.
+
+`RAILS_LOG_TO_STDOUT` and `RAILS_SERVE_STATIC_FILES` are **not read** by
+Vulcan: `config/environments/production.rb` assigns the stdout logger
+unconditionally and Rails 8 serves static files by default. They have been
+removed from the Dockerfile, `app.json` and the env templates, because an
+operator who sees a variable set in a deployment template reasonably assumes
+turning it off does something.
 
 ## Container Logging (Production)
 

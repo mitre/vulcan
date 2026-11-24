@@ -31,8 +31,6 @@ heroku addons:create heroku-postgresql:mini
 ```bash
 # Ruby buildpack configuration
 heroku config:set RAILS_ENV=production
-heroku config:set RAILS_SERVE_STATIC_FILES=true
-heroku config:set RAILS_LOG_TO_STDOUT=true
 
 # Application configuration
 heroku config:set SECRET_KEY_BASE=$(rails secret)
@@ -78,8 +76,6 @@ DATABASE_URL=postgres://...
 # Rails configuration
 SECRET_KEY_BASE=your-secret-key
 RAILS_ENV=production
-RAILS_SERVE_STATIC_FILES=true
-RAILS_LOG_TO_STDOUT=true
 
 # Vulcan configuration
 VULCAN_CONTACT_EMAIL=admin@example.com
@@ -292,9 +288,10 @@ The postdeploy uses `DISABLE_DATABASE_ENVIRONMENT_CHECK=1` because review apps r
 
 1. **Assets not loading**
    ```bash
-   heroku config:set RAILS_SERVE_STATIC_FILES=true
    heroku run rails assets:precompile
    ```
+   Rails 8 serves precompiled static files by default, so there is no
+   `RAILS_SERVE_STATIC_FILES` to set — if assets 404, they were not built.
 
 2. **Database connection errors**
    ```bash

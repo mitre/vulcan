@@ -242,6 +242,30 @@ RSpec.describe 'Settings defaults' do
     end
   end
 
+  # The example above only proves the value parses to some positive number of
+  # seconds, which is true of every value anyone might set — so the documented
+  # default (3600) drifted away from the template without failing anything.
+  # The template's fallback literal is the number ENVIRONMENT_VARIABLES.md
+  # documents, and it is read statically so the assertion does not depend on
+  # whether a local .env happens to set VULCAN_SESSION_TIMEOUT.
+  describe 'the session timeout default in the settings template' do
+    let(:fallback) do
+      Rails.root.join('config/vulcan.default.yml')
+           .read[/ENV\[['"]VULCAN_SESSION_TIMEOUT['"]\]\s*\|\|\s*(\d+)/, 1]
+    end
+
+    it 'falls back to 3600 when VULCAN_SESSION_TIMEOUT is unset' do
+      expect(fallback).to eq('3600'),
+                          'the documented VULCAN_SESSION_TIMEOUT default is 3600 (1 hour), but ' \
+                          "config/vulcan.default.yml falls back to #{fallback.inspect}. If this " \
+                          'is intentional, update ENVIRONMENT_VARIABLES.md and this example together.'
+    end
+
+    it 'resolves to one hour of inactivity' do
+      expect(TimeoutParser.parse(fallback)).to eq(1.hour.to_i)
+    end
+  end
+
   describe 'auditing is disabled by default in test environment' do
     it 'Audited.auditing_enabled is false' do
       expect(Audited.auditing_enabled).to be(false)

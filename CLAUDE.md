@@ -292,7 +292,7 @@ See `ENVIRONMENT_VARIABLES.md` for complete list. Key ones:
 - `VULCAN_FIRST_USER_ADMIN` - First user becomes admin
 - `VULCAN_ADMIN_EMAIL`, `VULCAN_ADMIN_PASSWORD` - Env var admin bootstrap
 - `RAILS_FORCE_SSL` - Defaults to false for Docker quickstart
-- `RAILS_LOG_TO_STDOUT` - Container logging
+- `STRUCTURED_LOGGING` - OIDC discovery events as JSON (production already logs to stdout unconditionally)
 
 ### Settings Flow
 

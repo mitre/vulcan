@@ -478,15 +478,25 @@ max_wal_size = 4GB
 
 ```bash
 # Set in .env.production
-RAILS_MAX_THREADS=5        # Puma threads; also sets the Active Record pool size
+RAILS_MAX_THREADS=5        # Puma threads per process; also sets the Active Record pool size
+WEB_CONCURRENCY=2          # Puma worker processes; omit or 0 for a single process
 PORT=3000                  # Puma listen port
 ```
 
-`RAILS_MAX_THREADS` is the single knob for concurrency: `config/puma.rb` uses it for the thread
-pool and `config/database.yml` uses it for `pool`, so the two can never drift apart. The shipped
-Puma config runs a single process and declares no `workers`, so `WEB_CONCURRENCY` has no effect;
-run multiple Puma units behind nginx if you need more processes. There is no `DATABASE_POOL`
-variable.
+`RAILS_MAX_THREADS` sizes both halves of one process: `config/puma.rb` uses it for the thread pool
+and `config/database.yml` uses it for `pool`, so those two can never drift apart. There is no
+`DATABASE_POOL` variable.
+
+`WEB_CONCURRENCY` sizes the number of processes. `config/puma.rb` never calls `workers`, but Puma's
+own default is `ENV['WEB_CONCURRENCY']` (0 when unset), so setting it *does* take effect, and any
+value above 1 also turns on `preload_app`. Verified against this repo's `config/puma.rb`: unset
+gives `workers=0, preload_app=false`; `WEB_CONCURRENCY=2` gives `workers=2, preload_app=true`.
+
+Size for the product, not for either number alone. The pool is **per process**, so
+`WEB_CONCURRENCY=2` with `RAILS_MAX_THREADS=5` opens 10 database connections and runs two copies of
+the application — set PostgreSQL's `max_connections` and the host's memory accordingly. Note that
+`.env.production.example` ships `WEB_CONCURRENCY=2`, so a deployment built from that template is
+already in cluster mode.
 
 ## Troubleshooting
 

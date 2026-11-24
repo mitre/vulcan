@@ -269,11 +269,12 @@ FROM base AS production
 
 USER 0
 
+# RAILS_LOG_TO_STDOUT and RAILS_SERVE_STATIC_FILES are deliberately absent:
+# config/environments/production.rb assigns the stdout logger unconditionally
+# and Rails 8 serves static files by default, so nothing reads either name.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test" \
-    RAILS_LOG_TO_STDOUT="true" \
-    RAILS_SERVE_STATIC_FILES="true" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
     RUBY_YJIT_ENABLE="1"
 
