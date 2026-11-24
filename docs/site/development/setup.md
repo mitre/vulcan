@@ -52,15 +52,15 @@ yarn install
 #### Option A: Docker PostgreSQL (Recommended)
 
 ```bash
-# Start PostgreSQL container
+# Start PostgreSQL container. It publishes DATABASE_PORT (default 5432) — the
+# same variable config/database.yml connects to, so no extra configuration is
+# needed. Set DATABASE_PORT in .env first if 5432 is already taken.
 docker compose -f docker-compose.dev.yml up db -d
 
-# Wait for healthy status
-docker compose ps db   # should show "healthy"
-
-# The container publishes host port 5435, but database.yml defaults to 5432,
-# so point Rails at it before preparing the database.
-echo "DATABASE_PORT=5435" >> .env
+# Confirm the host-side mapping. `docker compose ps db` reports the container's
+# OWN healthcheck, which runs pg_isready inside the container and so cannot see
+# a host port problem — check the published mapping instead.
+docker compose -f docker-compose.dev.yml port db 5432
 
 # Create and migrate development database
 bin/rails db:prepare
@@ -462,7 +462,6 @@ When running multiple MITRE projects simultaneously, assign unique ports to avoi
 ```bash
 # Example .env
 DATABASE_PORT=5435
-POSTGRES_PORT=5435
 PORT=3000
 DATABASE_GSSENCMODE=disable
 ```

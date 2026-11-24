@@ -1,10 +1,25 @@
 #!/usr/bin/env ruby
 require "fileutils"
+require "socket"
 
 APP_ROOT = File.expand_path("..", __dir__)
 
 def system!(*args)
   system(*args, exception: true)
+end
+
+# True once something answers on the database address. Prefers pg_isready
+# (it confirms the server is accepting connections, not just that the TCP port
+# is open) and falls back to a TCP connect when the client tools are absent.
+# An unresolvable DATABASE_HOST is a configuration error like any other, so it
+# reports "not listening" rather than raising out of the setup script.
+def db_accepting_connections?(host, port, have_pg_isready)
+  return system("pg_isready -h #{host} -p #{port} -q > /dev/null 2>&1") if have_pg_isready
+
+  Socket.tcp(host, port, connect_timeout: 1, &:close)
+  true
+rescue SystemCallError, SocketError, IO::TimeoutError
+  false
 end
 
 FileUtils.chdir APP_ROOT do
@@ -30,16 +45,47 @@ FileUtils.chdir APP_ROOT do
   puts "\n== Starting development database =="
   system "docker compose -f docker-compose.dev.yml up db -d"
 
-  # Wait for PostgreSQL to be ready
-  pgport = ENV.fetch("DATABASE_PORT", "5432")
+  # Wait for PostgreSQL to accept connections on the address Rails will dial.
+  # The Compose healthcheck runs pg_isready INSIDE the container, so it reports
+  # healthy even when the host-side port is wrong or unpublished — a false
+  # green. pg_isready is authoritative when the client tools are installed, but
+  # they often are not on a machine that only ever runs the database in Docker,
+  # and `system` returns nil for a missing binary: the old loop then spun out
+  # all 30 attempts and fell through to db:prepare, which failed with a
+  # PG::ConnectionBad backtrace instead of naming the problem. So we fall back
+  # to a plain TCP connect, which needs nothing on PATH.
+  pgport = Integer(ENV.fetch("DATABASE_PORT", "5432"))
   pghost = ENV.fetch("DATABASE_HOST", "127.0.0.1")
+  have_pg_isready = system("command -v pg_isready > /dev/null 2>&1")
+
   print "   Waiting for PostgreSQL on #{pghost}:#{pgport}"
-  30.times do
-    break if system("pg_isready -h #{pghost} -p #{pgport} -q 2>/dev/null")
+  listening = 30.times.any? do
+    break true if db_accepting_connections?(pghost, pgport, have_pg_isready)
+
     print "."
     sleep 1
+    false
   end
   puts
+
+  unless listening
+    abort <<~MESSAGE
+
+      == ERROR: nothing is listening on #{pghost}:#{pgport} ==
+
+      Rails reads the database port from DATABASE_PORT (config/database.yml),
+      and docker-compose.dev.yml publishes the dev container on the same
+      variable. Check, in order:
+
+        1. Is the container up?   docker compose -f docker-compose.dev.yml ps db
+        2. Is the port published? docker compose -f docker-compose.dev.yml port db 5432
+        3. Does DATABASE_PORT in .env match a port nothing else has taken?
+           See docs/site/development/port-registry.md.
+
+      Aborting before db:prepare so you get this message instead of a
+      connection backtrace.
+    MESSAGE
+  end
 
   puts "\n== Checking for legacy database names =="
   system "bin/db-rename-legacy"

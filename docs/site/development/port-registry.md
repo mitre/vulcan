@@ -4,13 +4,14 @@ When running multiple MITRE projects simultaneously, assign unique ports to avoi
 
 ## Default Behavior
 
-`config/database.yml` defaults to port 5432 and Puma to 3000, so a local
-PostgreSQL install needs no port configuration at all.
+`DATABASE_PORT` is the only database port setting. `config/database.yml`
+connects to it and `docker-compose.dev.yml` publishes the dev container on it,
+so the two can never disagree. It defaults to 5432 and Puma's `PORT` defaults
+to 3000, which means a single-project checkout — local PostgreSQL *or* the dev
+container — needs no port configuration at all.
 
-The dev Docker database is the exception: `docker-compose.dev.yml` publishes
-`${POSTGRES_PORT:-5435}:5432`, so it lands on host port **5435** while Rails
-still looks for 5432. Using that container therefore requires
-`DATABASE_PORT=5435` in `.env` — which is why Vulcan's row below reads 5435.
+Set `DATABASE_PORT` only when 5432 is already taken, either by another
+project's database or by a PostgreSQL you installed on the host.
 
 ## Port Assignments
 
@@ -18,6 +19,8 @@ still looks for 5432. Using that container therefore requires
 |---|---|---|
 | Vulcan | 3000 | 5435 |
 
+Vulcan's assignment is 5435 for developers running several MITRE projects at
+once; a single-project checkout can leave it unset and use the 5432 default.
 If you run other MITRE projects alongside Vulcan, assign them different ports in their own `.env` files to avoid conflicts.
 
 ## Setup
@@ -25,18 +28,17 @@ If you run other MITRE projects alongside Vulcan, assign them different ports in
 Each project uses the same pattern: env vars with standard defaults.
 
 1. Copy `.env.example` to `.env`
-2. Set `DATABASE_PORT` and `POSTGRES_PORT` to the same value from the table above
+2. Set `DATABASE_PORT` from the table above (only needed when sharing the host)
 3. Set `PORT` for the app server
-4. `docker compose up db -d`
+4. `docker compose -f docker-compose.dev.yml up db -d`
 5. `bin/rails db:prepare` (or equivalent)
 
-### Example `.env` (Vulcan)
+### Example `.env` (Vulcan, running alongside other projects)
 
 ```bash
 DATABASE_PORT=5435
 DATABASE_HOST=127.0.0.1
 DATABASE_GSSENCMODE=disable
-POSTGRES_PORT=5435
 PORT=3000
 ```
 
@@ -46,11 +48,10 @@ All MITRE projects follow `UPPERCASE_WITH_UNDERSCORES` using full descriptive wo
 
 | Variable | Used By | Purpose |
 |---|---|---|
-| `DATABASE_PORT` | `database.yml` | PostgreSQL client connection port |
+| `DATABASE_PORT` | `database.yml`, `docker-compose.dev.yml` | PostgreSQL port: the port Rails connects to, and the host port the dev container publishes |
 | `DATABASE_HOST` | `database.yml` | PostgreSQL host (default: 127.0.0.1) |
 | `DATABASE_GSSENCMODE` | `database.yml` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) |
 | `DATABASE_URL` | `database.yml` | Full connection string (12-factor, takes precedence in production) |
-| `POSTGRES_PORT` | `docker-compose.dev.yml` | Host-side port mapping for the dev database, default 5435 (must match DATABASE_PORT) |
 | `POSTGRES_USER` | `docker-compose.yml` | Docker PostgreSQL init: username to create |
 | `POSTGRES_PASSWORD` | `docker-compose.yml` | Docker PostgreSQL init: password to set |
 | `POSTGRES_DB` | `docker-compose.yml` | Docker PostgreSQL init: database to create |
@@ -58,7 +59,7 @@ All MITRE projects follow `UPPERCASE_WITH_UNDERSCORES` using full descriptive wo
 | `DATABASE_NAME` | `database.yml` | Override default database name |
 | `VULCAN_PORT` | `docker-compose.yml`, `docker-compose.dev.yml` | Host-side port mapping for the web container |
 
-**Why two port variables?** `DATABASE_PORT` is what Rails uses to connect. `POSTGRES_PORT` is what Docker uses to map the container's internal port 5432 to the host. Set both to the same value in `.env`.
+**Why one port variable?** The host-side port the dev container publishes and the port Rails dials are the same port by definition, so there is nothing to keep in sync — `docker-compose.dev.yml` reads `DATABASE_PORT` directly. The earlier `POSTGRES_PORT` was a second name for the same number and has been removed; a leftover `POSTGRES_PORT` in `.env` is simply ignored, so delete it.
 
 **Why not `PG*` shorthand?** PostgreSQL's libpq defines `PGPORT`, `PGHOST`, etc. but our project convention uses full descriptive words with underscores (`DATABASE_PORT`, `VULCAN_ENABLE_OIDC`, etc.) for consistency and readability across all MITRE projects.
 

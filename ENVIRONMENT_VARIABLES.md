@@ -14,11 +14,10 @@ This document lists all environment variables that can be used to configure Vulc
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | PostgreSQL connection string (12-factor, takes precedence) | - | `postgres://user:pass@localhost:5432/vulcan_production` |
-| `DATABASE_PORT` | PostgreSQL client connection port (used by database.yml) | `5432` | `5435` |
+| `DATABASE_PORT` | PostgreSQL port — the port `database.yml` connects to, and the host port `docker-compose.dev.yml` publishes the dev database on | `5432` | `5435` |
 | `DATABASE_HOST` | PostgreSQL host (used by database.yml) | `127.0.0.1` | `localhost` |
 | `DATABASE_GSSENCMODE` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) | `prefer` | `disable` |
 | `DATABASE_NAME` | Override database name (dev + production only; test is hardcoded) | `vulcan_development` / `vulcan_production` | `vulcan_staging` |
-| `POSTGRES_PORT` | Docker host-side port mapping in `docker-compose.dev.yml` (should match DATABASE_PORT) | `5435` | `5432` |
 | `POSTGRES_USER` | PostgreSQL username (Docker init + database.yml) | `postgres` | `vulcan_user` |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker init + database.yml) | `postgres` | `secure_password` |
 | `POSTGRES_DB` | PostgreSQL database name (Docker container init only, not used by database.yml) | `vulcan_production` | `vulcan_prod` |
@@ -26,7 +25,14 @@ This document lists all environment variables that can be used to configure Vulc
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
-**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` and `DB_SUFFIX` are removed. Use `POSTGRES_PASSWORD` and `DATABASE_NAME` respectively. `POSTGRES_DB` is no longer read by database.yml — use `DATABASE_NAME` for all environments. Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
+**Deprecated / removed:**
+
+- `VULCAN_VUE_DATABASE_PASSWORD` → use `POSTGRES_PASSWORD`
+- `DB_SUFFIX` → use `DATABASE_NAME`
+- `POSTGRES_PORT` → use `DATABASE_PORT`. It was a second name for the same host port; `docker-compose.dev.yml` now reads `DATABASE_PORT` directly, so there is one port variable and nothing to keep in sync. A leftover `POSTGRES_PORT` in `.env` is ignored.
+- `POSTGRES_DB` is no longer read by `database.yml` — use `DATABASE_NAME` for all environments.
+
+Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
 
 **Multi-Project Development**: See the [port registry](/development/port-registry) for recommended port assignments when running multiple projects simultaneously.
 
@@ -409,7 +415,6 @@ For local development, create a `.env` file in the project root with your settin
 ```bash
 # Database (see docs/site/development/port-registry.md for multi-project ports)
 DATABASE_PORT=5435
-POSTGRES_PORT=5435
 DATABASE_HOST=127.0.0.1
 DATABASE_GSSENCMODE=disable
 

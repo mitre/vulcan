@@ -19,8 +19,12 @@ services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
+    # DATABASE_PORT is the single source of truth for the host-side database
+    # port: config/database.yml connects to it and this mapping publishes it.
+    # Assign it per project (see docs/site/development/port-registry.md) when
+    # running several projects at once.
     ports:
-      - "${POSTGRES_PORT:-5435}:5432"
+      - "${DATABASE_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}

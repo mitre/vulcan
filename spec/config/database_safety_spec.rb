@@ -115,6 +115,47 @@ RSpec.describe 'Database deployment safety', type: :request do
     end
   end
 
+  # The dev database container and Rails must agree on the host port, or the
+  # documented "Recommended" setup path fails: docker-compose.dev.yml published
+  # ${POSTGRES_PORT:-5435} while config/database.yml read DATABASE_PORT
+  # (default 5432), two structurally uncoupled names. Both documented entry
+  # points — setup.md Option A and bin/setup — then aborted on db:prepare, and
+  # the Compose healthcheck gave a false green because pg_isready runs inside
+  # the container.
+  #
+  # The invariant is one variable, not two values that happen to match: the
+  # port Rails dials and the host port the container publishes are the same
+  # port by definition.
+  describe 'development database port' do
+    let(:dev_compose) { Rails.root.join('docker-compose.dev.yml').read }
+    let(:database_yml) { Rails.root.join('config/database.yml').read }
+
+    it 'database.yml reads DATABASE_PORT with the standard PostgreSQL default' do
+      expect(database_yml).to match(/ENV\.fetch\(['"]DATABASE_PORT['"],\s*5432\)/),
+                              'config/database.yml must read DATABASE_PORT defaulting to 5432'
+    end
+
+    it 'the dev compose file publishes the database on the same variable and default' do
+      published = dev_compose.match(/^\s*-\s*"\$\{(\w+):-(\d+)\}:5432"/)&.captures
+
+      expect(published).to eq(%w[DATABASE_PORT 5432]),
+                           'docker-compose.dev.yml must publish the db service on ' \
+                           '"${DATABASE_PORT:-5432}:5432" so the container lands on the port ' \
+                           "config/database.yml connects to. Found: #{published.inspect}"
+    end
+
+    it 'no second name for the same port survives anywhere' do
+      offenders = %w[
+        docker-compose.dev.yml docker-compose.yml .env.example .env.production.example
+        ENVIRONMENT_VARIABLES.md docs/site/development/setup.md
+      ].select { |path| Rails.root.join(path).read.include?('POSTGRES_PORT=') }
+
+      expect(offenders).to eq([]),
+                           'POSTGRES_PORT was a duplicate name for DATABASE_PORT and is removed; ' \
+                           "these files still set it:\n#{offenders.join("\n")}"
+    end
+  end
+
   describe 'app.json global env does NOT contain dangerous flags' do
     let(:global_env) { app_json['env'] }
 

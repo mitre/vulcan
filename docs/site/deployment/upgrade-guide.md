@@ -215,7 +215,12 @@ The `DB_SUFFIX` environment variable for git worktree database isolation has bee
 
 ### Port Registry
 
-Default database port in `docker-compose.dev.yml` changed from `5432` to `5435`. Set `DATABASE_PORT` and `POSTGRES_PORT` in your `.env` — see [port registry](/development/port-registry) for multi-project assignments.
+The development database port moved into the port registry so several MITRE
+projects can share a host. `docker-compose.dev.yml` briefly published a
+separate `POSTGRES_PORT` (default 5435) while Rails kept reading
+`DATABASE_PORT` (default 5432); both now read `DATABASE_PORT`, so set that one
+variable and delete any `POSTGRES_PORT` from `.env`. See
+[port registry](/development/port-registry) for multi-project assignments.
 
 ### Personal Access Tokens
 
