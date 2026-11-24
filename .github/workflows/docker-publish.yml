@@ -52,9 +52,16 @@ on:
         default: false
         type: boolean
       timeout_minutes:
-        description: 'Wall-clock budget for the publish job.'
+        description: >-
+          Wall-clock budget for the publish job. Grounded in measurement, not
+          padding: on Build Cloud the whole job has measured 2m57s (mainline
+          dispatch 33343714810) to 4m02s (release dispatch 33083040270), and
+          the slowest Build Cloud release on record is 10m26s (v2.3.6). 25
+          minutes is ~2.5x that worst case, which absorbs a cold cloud cache,
+          a slow SBOM submission and a slow repo1 clone while still failing
+          fast if the build is wedged.
         required: false
-        default: 30
+        default: 25
         type: number
 
 jobs:
@@ -70,23 +77,31 @@ jobs:
           username: ${{ vars.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      # Default: free QEMU-emulated multi-arch build on the runner.
-      # Opt into Docker Build Cloud (faster, consumes minutes) via the
-      # workflow_dispatch `use_build_cloud` input.
-      - name: Set up QEMU (for emulated multi-arch builds)
-        if: github.event.inputs.use_build_cloud != 'true'
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-
-      - name: Set up Docker Buildx (local + QEMU emulation)
-        if: github.event.inputs.use_build_cloud != 'true'
-        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
-
+      # Docker Build Cloud, unconditionally. This is not a preference, it is
+      # the only driver that has ever completed a multi-arch Vulcan build:
+      #
+      #   v2.4.1, run 33079448087, QEMU         build step cancelled at 19m33s
+      #   v2.4.1, run 33083040270, Build Cloud  build step done in     2m35s
+      #
+      # Same tag, same tree, 40 minutes apart, driver the only variable.
+      # Vulcan's image compiles Ruby and jemalloc from source, which costs
+      # roughly 4.5x under QEMU, and both platform legs share one 4-vCPU
+      # runner, so emulated multi-arch does not finish inside any sane budget.
+      # Build Cloud builds each platform on a native machine and brings its
+      # own persistent layer cache, which is why no cache-from/cache-to is
+      # configured on the bake `registry` target (see docker-bake.hcl).
+      #
+      # There is deliberately no emulated fallback. A fallback here is what
+      # broke releases in the first place: the driver was gated on
+      # `github.event.inputs`, which is empty on the `release: published` and
+      # `push:` triggers, so every real publish silently took the QEMU path
+      # and timed out. If Build Cloud is unavailable this step fails in under
+      # a minute with a clear error, which is the behaviour we want.
       - name: Set up Docker Buildx (Docker Build Cloud)
-        if: github.event.inputs.use_build_cloud == 'true'
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
         with:
           driver: cloud
-          endpoint: "mitre/mitre-builder"
+          endpoint: ${{ vars.DOCKER_BUILD_CLOUD_ENDPOINT || 'mitre/mitre-builder' }}
 
       - name: Build and push the multi-arch image
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
@@ -116,11 +131,21 @@ jobs:
           TAG: mitre/vulcan:${{ inputs.version }}
         run: |
           set -euo pipefail
+          # DockerHub's registry read path can lag the push by a few seconds, so
+          # a single inspect occasionally sees no manifest and the whole publish
+          # fails after the image is already live. Retry before giving up.
           for arch in amd64 arm64; do
-            digest="$(docker buildx imagetools inspect "$TAG" --format \
-              "{{range .Manifest.Manifests}}{{if and (eq .Platform.OS \"linux\") (eq .Platform.Architecture \"$arch\")}}{{.Digest}}{{end}}{{end}}")"
+            digest=""
+            for attempt in 1 2 3 4 5; do
+              digest="$(docker buildx imagetools inspect "$TAG" --format \
+                "{{range .Manifest.Manifests}}{{if and (eq .Platform.OS \"linux\") (eq .Platform.Architecture \"$arch\")}}{{.Digest}}{{end}}{{end}}" \
+                2>/dev/null || true)"
+              [[ "$digest" == sha256:* ]] && break
+              echo "linux/$arch digest not available yet (attempt $attempt/5); retrying in 5s"
+              sleep 5
+            done
             if [[ "$digest" != sha256:* ]]; then
-              echo "::error::Failed to resolve the linux/$arch digest for $TAG"
+              echo "::error::Failed to resolve the linux/$arch digest for $TAG after 5 attempts"
               exit 1
             fi
             echo "$arch=$digest" >> "$GITHUB_OUTPUT"

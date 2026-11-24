@@ -34,5 +34,4 @@ jobs:
       ironbank_project_id: 19019
       ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan-mainline.git
       ironbank_commit_author_name: "Automated Vulcan Mainline"
-      timeout_minutes: 120
     secrets: inherit

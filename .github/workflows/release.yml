@@ -18,22 +18,39 @@ on:
         required: false
         type: string
 
+# Two publishes of the same tag must not race each other for `release-latest`.
+# Serialise per tag, and never cancel a publish in flight — a half-pushed
+# manifest list is worse than a slow one.
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  resolve:
-    name: Resolve the release version
+  # Gate the publish on the three things that can make a release ship the
+  # wrong bits. Deliberately a *gate*, not a re-run of the suite: ci.yml
+  # already tested this exact tree on the version-bump commit, so re-running
+  # it would add ~15 minutes to every release to re-prove the same result.
+  # This job proves instead that the tag really points at that tested,
+  # on-master, correctly-bumped commit, and costs seconds.
+  verify:
+    name: Verify the tag is releasable
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read   # read ci.yml's conclusion for the tagged commit
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
       version: ${{ steps.resolve.outputs.version }}
+      sha: ${{ steps.resolve.outputs.sha }}
     steps:
-      # DockerHub tags carry no `v` prefix (mitre/vulcan:2.4.1, not :v2.4.1).
-      - name: Resolve the tag and the unprefixed image version
+      # DockerHub tags carry no `v` prefix (mitre/vulcan:2.4.1, not :v2.4.1),
+      # so the version is the tag with the prefix stripped.
+      - name: Resolve the tag, its commit, and the unprefixed image version
         id: resolve
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           RAW_TAG: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
@@ -41,22 +58,86 @@ jobs:
             echo "::error::Could not determine a release tag to publish."
             exit 1
           fi
-          echo "tag=$RAW_TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${RAW_TAG#v}" >> "$GITHUB_OUTPUT"
-          echo "Publishing $RAW_TAG as mitre/vulcan:${RAW_TAG#v}"
+          if [[ ! "$RAW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$RAW_TAG' is not a vMAJOR.MINOR.PATCH release tag."
+            exit 1
+          fi
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RAW_TAG}" --jq '.sha')"
+          {
+            echo "tag=$RAW_TAG"
+            echo "version=${RAW_TAG#v}"
+            echo "sha=$sha"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing $RAW_TAG ($sha) as mitre/vulcan:${RAW_TAG#v}"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+          fetch-depth: 0
+
+      # The version bump must land before the tag. If the tag points at a
+      # commit whose VERSION file says something else, the image would be
+      # pushed under a tag that disagrees with Vulcan::VERSION inside it.
+      - name: VERSION at the tagged commit must equal the tag
+        shell: bash
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "$file_version" != "$TAG" ]]; then
+            echo "::error::VERSION at $TAG reads '$file_version'. Tag the commit that bumps VERSION to '$TAG'."
+            exit 1
+          fi
+          echo "VERSION == $TAG"
+
+      - name: The tagged commit must be an ancestor of master
+        shell: bash
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin master
+          if ! git merge-base --is-ancestor "$SHA" FETCH_HEAD; then
+            echo "::error::$SHA is not on master. Releases are cut from master only."
+            exit 1
+          fi
+          echo "$SHA is on master"
+
+      # Nothing else in the pipeline checks this. Without it, publishing a
+      # release off a red commit ships an untested image to DockerHub and to
+      # Iron Bank, which is exactly the hole the old docs claimed was closed.
+      - name: CI must have passed for the tagged commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          conclusions="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}&event=push&status=completed" \
+            --jq '[.workflow_runs[].conclusion] | unique | join(" ")')"
+          if [[ -z "$conclusions" ]]; then
+            echo "::error::No completed push-event CI run found for $SHA. Let CI finish on master before publishing the release."
+            exit 1
+          fi
+          if [[ " $conclusions " != *" success "* ]]; then
+            echo "::error::CI for $SHA concluded '$conclusions', not success. Fix master and re-run CI before publishing."
+            exit 1
+          fi
+          echo "CI for $SHA concluded: $conclusions"
 
   publish:
-    needs: resolve
+    needs: verify
     permissions:
       contents: write   # anchore/sbom-action dependency-snapshot submission
       packages: write
     uses: ./.github/workflows/docker-publish.yml
     with:
-      tag_suffixes: "${{ needs.resolve.outputs.version }},release-latest"
-      version: ${{ needs.resolve.outputs.version }}
+      tag_suffixes: "${{ needs.verify.outputs.version }},release-latest"
+      version: ${{ needs.verify.outputs.version }}
       ironbank_project_id: 17073
       ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
       ironbank_commit_author_name: "Automated Vulcan Release"
       submit_sbom: true
-      timeout_minutes: 45
     secrets: inherit

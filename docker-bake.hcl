@@ -85,10 +85,6 @@ target "production" {
     "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.8"
   }
 
-  // Build cache configuration (only for CI/registry push)
-  // Uncomment for CI builds with registry access
-  // cache-from = ["type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache"]
-  // cache-to = ["type=registry,ref=${REGISTRY}/${IMAGE_NAME}:cache,mode=max"]
 }
 
 // ============================================================================
@@ -111,6 +107,24 @@ target "production-multiarch" {
 //   release:  TAG_SUFFIXES="<x.y.z>,release-latest"
 //   mainline: TAG_SUFFIXES="<git sha>,latest"
 // The first suffix is the immutable version and is surfaced as the image label.
+//
+// NOTE: no cache-from / cache-to here, on purpose.
+//
+// Both callers build on Docker Build Cloud (see
+// .github/workflows/docker-publish.yml), which maintains its own persistent
+// per-architecture layer cache across runs. A cold Build Cloud build of this
+// target measured 2m35s, so there is no build time left for a GitHub Actions
+// cache to recover.
+//
+// `type=gha` would actively cost us. A mode=max export of a two-architecture
+// UBI9 image that compiles Ruby and jemalloc from source runs to several GB,
+// and `gh api repos/mitre/vulcan/actions/cache/usage` reports 9.57 GB already
+// live across 84 caches against GitHub's 10 GB per-repository ceiling. Writing
+// image layers there would evict ci.yml's gem and Yarn caches by LRU on every
+// release and every push to master, trading a saving we do not need for slower
+// CI on every pull request. `cache-from` without a writer is a no-op, so it is
+// not configured either. The `ci` target below keeps `type=gha` because it is
+// single-architecture and small.
 
 target "registry" {
   inherits = ["production-multiarch"]
