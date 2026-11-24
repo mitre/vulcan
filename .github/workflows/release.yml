@@ -1,110 +1,62 @@
 name: Release
 
+# Publishes the stable image for a GitHub Release: mitre/vulcan:<x.y.z> and
+# mitre/vulcan:release-latest, plus the Iron Bank merge request on repo1.
+#
+# Trigger: publishing a GitHub Release in the UI (see
+# docs/site/development/release-process.md). workflow_dispatch exists to
+# re-run the publish for a tag that was already released, which is the
+# recovery path when the publish itself failed.
+
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
-      use_build_cloud:
-        description: 'Use Docker Build Cloud (fast, but consumes paid build minutes)'
+      tag:
+        description: 'Release tag to (re-)publish, e.g. v2.5.0. Defaults to the ref the workflow was dispatched from.'
         required: false
-        type: boolean
-        default: false
+        type: string
 
 jobs:
-  # ─── DOCKER RELEASE (multi-arch via Build Cloud) ───
-  docker-release:
+  resolve:
+    name: Resolve the release version
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 5
     permissions:
-      contents: write   # Required for anchore/sbom-action dependency-snapshot submission
-      packages: write
+      contents: read
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Login to DockerHub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          username: ${{ vars.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PAT }}
-
-      # Default: free QEMU-emulated multi-arch build on the runner.
-      # Opt into Docker Build Cloud (faster, consumes minutes) via the
-      # workflow_dispatch `use_build_cloud` input.
-      - name: Set up QEMU (for emulated multi-arch builds)
-        if: github.event.inputs.use_build_cloud != 'true'
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-
-      - name: Set up Docker Buildx (local + QEMU emulation)
-        if: github.event.inputs.use_build_cloud != 'true'
-        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
-
-      - name: Set up Docker Buildx (Docker Build Cloud)
-        if: github.event.inputs.use_build_cloud == 'true'
-        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
-        with:
-          driver: cloud
-          endpoint: "mitre/mitre-builder"
-
-      - name: Resolve release version
-        id: version
+      # DockerHub tags carry no `v` prefix (mitre/vulcan:2.4.1, not :v2.4.1).
+      - name: Resolve the tag and the unprefixed image version
+        id: resolve
         shell: bash
-        run: |
-          raw="${{ github.event.release.tag_name || github.ref_name }}"
-          echo "version=${raw#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push multi-arch image (tags <version> + release-latest)
-        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         env:
-          TAG_SUFFIXES: "${{ steps.version.outputs.version }},release-latest"
-        with:
-          files: docker-bake.hcl
-          targets: registry
-          push: true
-
-      - name: SBOM scan and dependency submission
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
-        with:
-          image: mitre/vulcan:${{ steps.version.outputs.version }}
-          artifact-name: image.spdx.json
-          dependency-snapshot: true
-
-      # ─── IRON BANK RELEASE STEPS ───
-
-      # Vulcan on IB has both arm and amd builds; we need hashes of both to provide to the hardening manifest in repo1
-      - name: Resolve per-architecture image digests for the Iron Bank manifest
-        id: digests
-        shell: bash
+          RAW_TAG: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
-          tag="mitre/vulcan:${{ steps.version.outputs.version }}"
-          amd64="$(docker buildx imagetools inspect "$tag" --format '{{range .Manifest.Manifests}}{{if and (eq .Platform.OS "linux") (eq .Platform.Architecture "amd64")}}{{.Digest}}{{end}}{{end}}')"
-          arm64="$(docker buildx imagetools inspect "$tag" --format '{{range .Manifest.Manifests}}{{if and (eq .Platform.OS "linux") (eq .Platform.Architecture "arm64")}}{{.Digest}}{{end}}{{end}}')"
-          [[ "$amd64" == sha256:* ]] || { echo "Failed to resolve amd64 digest for $tag"; exit 1; }
-          [[ "$arm64" == sha256:* ]] || { echo "Failed to resolve arm64 digest for $tag"; exit 1; }
-          echo "amd64=$amd64" >> "$GITHUB_OUTPUT"
-          echo "arm64=$arm64" >> "$GITHUB_OUTPUT"
-          echo "Resolved digests:  amd64=$amd64  arm64=$arm64"
+          if [[ -z "$RAW_TAG" ]]; then
+            echo "::error::Could not determine a release tag to publish."
+            exit 1
+          fi
+          echo "tag=$RAW_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RAW_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Publishing $RAW_TAG as mitre/vulcan:${RAW_TAG#v}"
 
-      # Opens a MR on Vulcan's repo1 repository with the new release
-      - name: Open Iron Bank merge request
-        uses: mitre/ironbank_release_action@1c14c27db1c37e894f8042ac2edcde08d445882d # v1
-        with:
-          name: Vulcan
-          version: ${{ steps.version.outputs.version }}
-          ironbank_pat: ${{ secrets.SAF_IRONBANK_REPO1_PAT }}
-          ironbank_username: ${{ secrets.SAF_IRONBANK_REPO1_USERNAME }}
-          ironbank_project_id: 17073
-          ironbank_project_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
-          git_commit_author_name: "Automated Vulcan Release"
-          git_commit_author_email: "saf@mitre.org"
-          # Each `sed` is paired with a `grep -qxF` assertion on the value it was
-          # supposed to write. `sed` exits 0 when its pattern matches nothing, so
-          # without the assertion a missing or reshaped `ARG VULCAN_VERSION=` line in
-          # repo1 would silently leave a stale version argument in the built image.
-          update_commands: |
-            yq e -i '.tags[0]=\"${{ steps.version.outputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ steps.version.outputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
-            sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ steps.version.outputs.version }}/' Dockerfile
-            grep -qxF 'ARG VULCAN_VERSION=${{ steps.version.outputs.version }}' Dockerfile || { echo 'Iron Bank update failed: Dockerfile has no line ARG VULCAN_VERSION=${{ steps.version.outputs.version }} after sed'; exit 1; }
-            sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ steps.version.outputs.version }}.arm64/' Dockerfile.arm64
-            grep -qxF 'ARG VULCAN_VERSION=${{ steps.version.outputs.version }}.arm64' Dockerfile.arm64 || { echo 'Iron Bank update failed: Dockerfile.arm64 has no line ARG VULCAN_VERSION=${{ steps.version.outputs.version }}.arm64 after sed'; exit 1; }
+  publish:
+    needs: resolve
+    permissions:
+      contents: write   # anchore/sbom-action dependency-snapshot submission
+      packages: write
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      tag_suffixes: "${{ needs.resolve.outputs.version }},release-latest"
+      version: ${{ needs.resolve.outputs.version }}
+      ironbank_project_id: 17073
+      ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
+      ironbank_commit_author_name: "Automated Vulcan Release"
+      submit_sbom: true
+      timeout_minutes: 45
+    secrets: inherit

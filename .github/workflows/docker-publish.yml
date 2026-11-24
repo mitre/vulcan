@@ -1,0 +1,142 @@
+name: Docker publish
+
+# Single implementation of "build the multi-arch image, push it to DockerHub,
+# and open the matching Iron Bank merge request on repo1".
+#
+# Two callers use it, and they differ only in what they tag and which repo1
+# project they file against:
+#
+#   release.yml   stable    tags <x.y.z> + release-latest   repo1 .../vulcan
+#   mainline.yml  bleeding  tags <git sha> + latest         repo1 .../vulcan-mainline
+#
+# Keeping one copy is not cosmetic: these two workflows were duplicated
+# line-for-line, and a build-driver regression that broke every release sat
+# unnoticed for three releases because the duplicate kept "working" (slowly).
+
+on:
+  workflow_call:
+    inputs:
+      tag_suffixes:
+        description: >-
+          Comma-separated image tag suffixes for the bake `registry` target.
+          The first entry is the immutable tag and becomes the image's
+          org.opencontainers.image.version label.
+        required: true
+        type: string
+      version:
+        description: >-
+          The version recorded in the Iron Bank hardening manifest and used to
+          address the just-pushed image (semver for releases, git SHA for
+          mainline). Must equal the first entry of tag_suffixes.
+        required: true
+        type: string
+      ironbank_project_id:
+        description: 'Numeric repo1 project id to open the merge request against.'
+        required: true
+        type: number
+      ironbank_clone_url:
+        description: 'repo1 clone URL (no scheme) for the target project.'
+        required: true
+        type: string
+      ironbank_commit_author_name:
+        description: 'Author name for the commit pushed to repo1.'
+        required: true
+        type: string
+      submit_sbom:
+        description: >-
+          Generate an SBOM and submit it as a dependency snapshot to the GitHub
+          dependency graph. Releases do this; mainline does not, because a
+          snapshot per master push would churn the dependency graph.
+          Requires the caller to grant `contents: write`.
+        required: false
+        default: false
+        type: boolean
+      timeout_minutes:
+        description: 'Wall-clock budget for the publish job.'
+        required: false
+        default: 30
+        type: number
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ vars.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      # Default: free QEMU-emulated multi-arch build on the runner.
+      # Opt into Docker Build Cloud (faster, consumes minutes) via the
+      # workflow_dispatch `use_build_cloud` input.
+      - name: Set up QEMU (for emulated multi-arch builds)
+        if: github.event.inputs.use_build_cloud != 'true'
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx (local + QEMU emulation)
+        if: github.event.inputs.use_build_cloud != 'true'
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+
+      - name: Set up Docker Buildx (Docker Build Cloud)
+        if: github.event.inputs.use_build_cloud == 'true'
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+        with:
+          driver: cloud
+          endpoint: "mitre/mitre-builder"
+
+      - name: Build and push the multi-arch image
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        env:
+          TAG_SUFFIXES: ${{ inputs.tag_suffixes }}
+        with:
+          files: docker-bake.hcl
+          targets: registry
+          push: true
+
+      - name: SBOM scan and dependency submission
+        if: inputs.submit_sbom
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          image: mitre/vulcan:${{ inputs.version }}
+          artifact-name: image.spdx.json
+          dependency-snapshot: true
+
+      # ─── IRON BANK ───
+      # Vulcan on Iron Bank ships both an arm64 and an amd64 image, so the
+      # hardening manifest needs the per-architecture digests of the manifest
+      # list we just pushed, not the list digest.
+      - name: Resolve per-architecture image digests for the Iron Bank manifest
+        id: digests
+        shell: bash
+        env:
+          TAG: mitre/vulcan:${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          for arch in amd64 arm64; do
+            digest="$(docker buildx imagetools inspect "$TAG" --format \
+              "{{range .Manifest.Manifests}}{{if and (eq .Platform.OS \"linux\") (eq .Platform.Architecture \"$arch\")}}{{.Digest}}{{end}}{{end}}")"
+            if [[ "$digest" != sha256:* ]]; then
+              echo "::error::Failed to resolve the linux/$arch digest for $TAG"
+              exit 1
+            fi
+            echo "$arch=$digest" >> "$GITHUB_OUTPUT"
+            echo "Resolved linux/$arch = $digest"
+          done
+
+      - name: Open the Iron Bank merge request
+        uses: mitre/ironbank_release_action@1c14c27db1c37e894f8042ac2edcde08d445882d # v1
+        with:
+          name: Vulcan
+          version: ${{ inputs.version }}
+          ironbank_pat: ${{ secrets.SAF_IRONBANK_REPO1_PAT }}
+          ironbank_username: ${{ secrets.SAF_IRONBANK_REPO1_USERNAME }}
+          ironbank_project_id: ${{ inputs.ironbank_project_id }}
+          ironbank_project_clone_url: ${{ inputs.ironbank_clone_url }}
+          git_commit_author_name: ${{ inputs.ironbank_commit_author_name }}
+          git_commit_author_email: "saf@mitre.org"
+          update_commands: |
+            yq e -i '.tags[0]=\"${{ inputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ inputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ inputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ inputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
