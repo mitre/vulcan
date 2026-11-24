@@ -134,6 +134,9 @@ jobs:
       packages: write
     uses: ./.github/workflows/docker-publish.yml
     with:
+      # The verified commit, not github.ref: a workflow_dispatch re-publish
+      # from the default branch must still build the tag's tree.
+      ref: ${{ needs.verify.outputs.sha }}
       tag_suffixes: "${{ needs.verify.outputs.version }},release-latest"
       version: ${{ needs.verify.outputs.version }}
       ironbank_project_id: 17073

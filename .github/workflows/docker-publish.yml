@@ -51,6 +51,15 @@ on:
         required: false
         default: false
         type: boolean
+      ref:
+        description: >-
+          The commit, tag or branch to build. Callers must pass the exact ref
+          the image represents. Defaulting to the workflow's own ref would be a
+          trap: re-publishing a release via workflow_dispatch from the default
+          branch would then build master's tree and push it under the release's
+          version.
+        required: true
+        type: string
       timeout_minutes:
         description: >-
           Wall-clock budget for the publish job. Grounded in measurement, not
@@ -70,6 +79,8 @@ jobs:
     timeout-minutes: ${{ inputs.timeout_minutes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Login to DockerHub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0

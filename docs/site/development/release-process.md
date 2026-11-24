@@ -114,7 +114,7 @@ bundle exec rspec spec/config/docs_version_consistency_spec.rb \
 
 ### 5. Write the changelog entry
 
-`CHANGELOG.md` is hand-authored. Replace the empty `## [Unreleased]` heading with a dated section for the release, keeping the [Keep a Changelog](https://keepachangelog.com) sections already in use (`Added`, `Fixed`, `Changed`, plus `Behavior changes` when there are any), and leave a fresh empty `## [Unreleased]` above it:
+`CHANGELOG.md` is hand-authored. Rename the `## [Unreleased]` heading to a dated section for this release, keeping the [Keep a Changelog](https://keepachangelog.com) sections already in use (`Added`, `Fixed`, `Changed`, plus `Behavior changes` when there are any), and leave a fresh empty `## [Unreleased]` above it:
 
 ```markdown
 ## [Unreleased]
@@ -127,6 +127,10 @@ bundle exec rspec spec/config/docs_version_consistency_spec.rb \
 ```
 
 `spec/config/release_infrastructure_spec.rb` asserts a `## [v<version>]` section exists for the current version, so an unwritten changelog fails CI.
+
+::: tip `[Unreleased]` is often already populated
+Fix and feature branches add their own bullets under `## [Unreleased]` as they merge, so do not expect it to be empty. Your job at release time is to **rename that heading** to `## [v2.5.0] - <date>`, review and edit the entries already there, add anything missing, and open a fresh empty `## [Unreleased]` above it. Do not delete entries other people wrote.
+:::
 
 The release-notes page from step 4 is the user-facing version of the same content: more context, upgrade warnings, and anything a self-hoster must do before upgrading.
 

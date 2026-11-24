@@ -225,6 +225,29 @@ RSpec.describe 'release infrastructure' do
                               "found it in #{implementors.join(', ')}"
     end
 
+    # A re-publish dispatched from the default branch must still build the
+    # tag's tree. If the shared workflow checked out its own `github.ref`, it
+    # would build master and push it under the release's version number.
+    it 'makes every caller state the ref to build' do
+      expect(workflow_on('docker-publish.yml')['workflow_call']['inputs'])
+        .to include('ref'), 'docker-publish.yml must take the ref to build as a required input'
+
+      checkout = workflow_yaml('docker-publish.yml')['jobs']['publish']['steps']
+                 .find { |s| s['uses'].to_s.include?('actions/checkout') }
+      expect(checkout.dig('with', 'ref')).to eq('${{ inputs.ref }}'),
+                                             'the publish checkout must use the caller-supplied ref'
+
+      %w[release.yml mainline.yml].each do |name|
+        refs = workflow_yaml(name)['jobs'].values
+                                          .select { |j| j['uses'].to_s.include?('docker-publish.yml') }
+                                          .map { |j| j.dig('with', 'ref') }
+        expect(refs).to all(be_present), "#{name} must tell docker-publish.yml which ref to build"
+        expect(refs).to all(satisfy { |r| r.exclude?('github.ref') }),
+                        "#{name} passes github.ref, which is the dispatched ref rather than the ref " \
+                        'being released'
+      end
+    end
+
     it 'routes both the release and mainline publishes through the shared workflow' do
       %w[release.yml mainline.yml].each do |name|
         callers = workflow_yaml(name)['jobs'].values.select do |job|

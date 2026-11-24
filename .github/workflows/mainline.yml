@@ -29,6 +29,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/docker-publish.yml
     with:
+      ref: ${{ github.sha }}
       tag_suffixes: "${{ github.sha }},latest"
       version: ${{ github.sha }}
       ironbank_project_id: 19019
