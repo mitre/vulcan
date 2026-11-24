@@ -24,23 +24,25 @@ Vulcan determines your current version by checking `schema_migrations` — the a
     - type: env_removed
       var: DB_SUFFIX
       replacement: DATABASE_NAME
-  data:
-    - type: backfill
-      description: Set NULL visibility to hidden (default)
-      sql: "UPDATE projects SET visibility = 1 WHERE visibility IS NULL"
 ```
 
 Each version can declare:
 - **`migration_floor`** — migration timestamp that identifies this version
-- **`required_stop`** — if true, upgrades MUST pass through this version (can't skip)
-- **`infrastructure`** — pre-boot changes (DB renames, env var migrations)
-- **`data`** — post-migration data fixes (backfills, cleanups)
+- **`infrastructure`** — pre-boot changes. Two step types are implemented:
+  `db_rename` (applied by the runner) and `env_removed` (advisory — it warns
+  when the removed variable is still set, and you edit `.env` yourself)
+- **`required_stop`** — documentary only today. `Upgrade::Preflight` does not
+  read this key, so marking a version a required stop changes nothing the
+  tooling does; it records the intent for whoever reads the manifest.
+
+Data fixes belong in Rails migrations, not in the manifest. `config/upgrade_path.yml`
+says so in its own header, and the preflight handles no `data` step type.
 
 ### Three-Phase Execution
 
 1. **Infrastructure** (shell, before Rails boots) — `bin/db-rename-legacy` handles database renames. Runs in the Docker entrypoint before `db:prepare`.
-2. **Schema** (Rails migrations) — `db:prepare` runs pending migrations as usual.
-3. **Data** (rake tasks, after schema is current) — `upgrade:auto` applies backfills and data fixes.
+2. **Schema** (Rails migrations) — `db:prepare` runs pending migrations as usual, including data-backfill migrations.
+3. **Verification** (rake task, after schema is current) — `upgrade:auto` re-runs the preflight, applies any remaining infrastructure actions idempotently, and reports env-var advisories.
 
 ## Upgrade Commands
 
@@ -112,18 +114,59 @@ repository instead of pulling.
 The entrypoint runs in order:
 1. `bin/db-rename-legacy` — renames legacy databases (instant metadata operation)
 2. `db:prepare` — creates DB if missing, runs pending migrations
-3. `upgrade:auto` — applies data fixes
+3. `upgrade:auto` — re-checks the upgrade path and reports anything left to do
 
 ### Bare Metal
 
+Fetch the release tag you are upgrading to — the tags are listed on the
+[releases page](https://github.com/mitre/vulcan/releases), and release tags
+carry a leading `v`:
+
 ```bash
-git pull origin v2.4.0
+git fetch --tags origin
+git checkout "v${VULCAN_VERSION}"     # e.g. VULCAN_VERSION=2.4.2
 bundle install
-yarn install --frozen-lockfile && yarn build
+yarn install && yarn build
 bundle exec rake upgrade:preflight    # Review what will change
 bundle exec rake upgrade:fix          # Apply infrastructure fixes
 bundle exec rake db:prepare           # Run migrations
 bundle exec rake upgrade:verify       # Confirm success
+```
+
+This sequence assumes your Ruby, Bundler and Yarn already match what the
+release pins. **Check that first** — see the version-specific section for the
+release you are moving to, and the toolchain note below.
+
+#### Toolchain prerequisites (bare metal)
+
+`bundle install` and `yarn install` both fail outright when the host toolchain
+is older than the release pins, and the failure messages do not say to
+reinstall anything. Check all three before the steps above. Read the pinned
+versions out of the repository rather than from this page, so these commands
+stay correct across releases:
+
+```bash
+# Ruby — the Gemfile's `ruby` line must match .ruby-version, and `bundle
+# install` refuses to run against anything else:
+#   "Your Ruby version is X, but your Gemfile specified Y"
+cat .ruby-version
+ruby -v
+# If they differ, install that Ruby with your version manager and re-shim
+# before continuing.
+
+# Bundler — the version that wrote Gemfile.lock:
+tail -2 Gemfile.lock          # the line under "BUNDLED WITH"
+bundler --version
+# If they differ: gem install bundler -v <that version>
+# A major-version difference matters; Bundler 2 cannot read a Bundler 4 lock.
+
+# Yarn — the pinned package manager:
+grep packageManager package.json
+yarn --version
+# Install the matching release (Corepack: `corepack enable && corepack
+# install`). The install flag differs by major version: Yarn 1 takes
+# `--frozen-lockfile`, Yarn 2+ takes `--immutable`. `yarn install` with no
+# flag works on both.
 ```
 
 ### Local Development
@@ -142,14 +185,25 @@ bundle exec rake upgrade:auto         # Data fixes
 
 ## Multi-Version Jumps
 
-The upgrade system handles jumps across multiple versions. If a version is marked `required_stop: true`, the preflight will report it and the runner will apply all intermediate steps in order.
+The upgrade system handles jumps across multiple versions: the preflight walks
+every version in the manifest and the runner applies each outstanding
+infrastructure action in order, so you do not have to stop at intermediate
+releases.
 
-Example: upgrading from v2.2.0 to v2.5.0 when v2.4.0 is a required stop:
-1. Preflight detects current version as 2.2.0 (from migration floor)
-2. Identifies v2.4.0 as a required stop with infrastructure changes
-3. Applies v2.4.0 infrastructure (DB renames) before v2.5.0 migrations
+Example: upgrading from v2.2.0 when v2.4.0 carries infrastructure changes:
+1. Preflight detects the current version as 2.2.0 (from the migration floor)
+2. Collects v2.4.0's outstanding infrastructure actions (the DB renames)
+3. `upgrade:fix` applies them before `db:prepare` runs the newer migrations
 
 Users running very old versions (v2.0.0, v2.2.0) will see all accumulated changes applied in sequence.
+
+::: warning `required_stop` is not enforced
+The preflight does not read `required_stop`, and nothing populates the
+report's `blockers` list, so no version can actually halt an upgrade today
+and `upgrade:auto`'s "resolve blockers before starting" path is unreachable.
+Read a `required_stop: true` entry in the manifest as a note to the operator,
+not as a gate the tooling will enforce for you.
+:::
 
 ## Adding Future Upgrade Steps
 
@@ -163,15 +217,20 @@ When a new version introduces breaking changes:
        - type: db_rename
          from: old_name
          to: new_name
-     data:
-       - type: backfill
-         description: What this fixes
-         sql: "UPDATE table SET column = value WHERE condition"
+       - type: env_removed
+         var: OLD_VARIABLE
+         replacement: NEW_VARIABLE
    ```
 
-2. If this version can't be skipped, add `required_stop: true`
+2. Put data fixes in a Rails migration, not in the manifest — the manifest
+   has no executable step type for them.
 
-3. The existing `Upgrade::Preflight` and `Upgrade::Runner` services handle the rest — no Ruby code changes needed for new versions.
+3. `required_stop: true` is documentation only until the preflight learns to
+   read it; see the warning above.
+
+4. The existing `Upgrade::Preflight` and `Upgrade::Runner` services handle
+   `db_rename` and `env_removed` — no Ruby code changes needed for a new
+   version that uses only those.
 
 ## Architecture
 
@@ -195,7 +254,53 @@ bin/setup                        ← Same sequence for local dev
 - **Schema-based detection** — current version determined from `schema_migrations`, not a VERSION file
 - **Idempotent** — every operation is safe to run multiple times
 - **Infrastructure before boot** — DB renames in shell (can't boot Rails if DB has wrong name)
-- **Fail loud** — blockers halt the upgrade with a clear message, don't silently continue
+- **Fail loud** — a failed action is reported, never swallowed. (The blocker mechanism that
+  would halt an upgrade outright is declared but not yet implemented — see the warning under
+  [Multi-Version Jumps](#multi-version-jumps).)
+
+## Upgrading to v2.5.0
+
+### Toolchain (bare metal only)
+
+This release moves its pinned Ruby, Bundler and Yarn versions. Docker
+deployments get all three inside the image and need to do nothing. On bare
+metal, run the three checks under
+[Toolchain prerequisites](#toolchain-prerequisites-bare-metal) **before**
+`bundle install`, in this order:
+
+1. Install the Ruby in `.ruby-version` and make it the active one
+2. `gem install bundler -v <the version under "BUNDLED WITH" in Gemfile.lock>`
+3. Install the Yarn in `package.json`'s `packageManager`
+
+Skipping step 1 stops the upgrade at its first command with
+`Your Ruby version is ..., but your Gemfile specified ...`, and the earlier
+procedure never said to reinstall Ruby.
+
+### Production environment files: nothing to do
+
+`.env.production.example` changed in this release, but only by **removing**
+variables that nothing reads:
+
+- `CIPHER_PASSWORD` and `CIPHER_SALT` — no application code ever read them
+- `RAILS_LOG_TO_STDOUT` and `RAILS_SERVE_STATIC_FILES` — Rails logs to stdout
+  and serves static files unconditionally in production
+
+No variable was added, renamed, or given a new default. Leaving those four in
+your existing `.env` is harmless; deleting them changes nothing. **Production
+operators have no env-file work for this release** — there is nothing to hunt
+for.
+
+### Removed: `POSTGRES_PORT`
+
+Development only. `docker-compose.dev.yml` now publishes the database on
+`DATABASE_PORT`, the same variable `config/database.yml` connects to, so one
+value configures both. Delete `POSTGRES_PORT` from your `.env`; it is ignored.
+See [port registry](/development/port-registry).
+
+### `COVERAGE=true` now works
+
+Development only. `COVERAGE=true` turns SimpleCov on without the rest of what
+`CI=true` implies. It was documented long before anything read it.
 
 ## Upgrading to v2.4.0
 

@@ -42,7 +42,7 @@ namespace :upgrade do
     puts 'All checks passed — nothing to do.' if report.actions.empty? && report.warnings.empty? && report.blockers.empty?
   end
 
-  desc 'Apply safe auto-fixable upgrade actions (DB renames, backfills)'
+  desc 'Apply safe auto-fixable upgrade actions (DB renames; env removals are advisory)'
   task fix: :environment do
     report = Upgrade::Preflight.call
 

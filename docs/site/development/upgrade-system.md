@@ -33,19 +33,21 @@ When you ship a version with breaking changes:
 # config/upgrade_path.yml
 2.5.0:
   migration_floor: '20260801000000'    # Your version's first migration timestamp
-  required_stop: true                  # Set if skipping this version would break upgrades
+  required_stop: true                  # Documentation only — the preflight does not read this
   infrastructure:
     - type: db_rename                  # Pre-boot: rename a database
       from: old_name
       to: new_name
-    - type: env_removed               # Advisory: env var was removed
+    - type: env_removed                # Advisory: env var was removed
       var: OLD_VAR
       replacement: NEW_VAR
-  data:
-    - type: backfill                   # Post-migration: fix data
-      description: Human-readable reason
-      sql: "UPDATE table SET col = val WHERE condition"
 ```
+
+`db_rename` and `env_removed` are the only step types `Upgrade::Preflight`
+implements. There is no `data:` section: put data fixes in a Rails migration,
+as `config/upgrade_path.yml`'s own header instructs. `required_stop` is
+parsed by nothing today — `@blockers` is initialised and never appended to —
+so it records intent for a reader rather than gating an upgrade.
 
 ### 2. Write a test
 

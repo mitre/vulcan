@@ -119,7 +119,7 @@ docker compose down -v                         # Stop and remove volumes
 
 # Upgrade toolkit (see docs/site/deployment/upgrade-guide.md)
 bundle exec rake upgrade:preflight             # Read-only report: version, pending actions, warnings
-bundle exec rake upgrade:fix                   # Apply safe auto-fixable actions (DB renames, backfills)
+bundle exec rake upgrade:fix                   # Apply safe auto-fixable actions (DB renames)
 bundle exec rake upgrade:verify                # Validate post-upgrade state (migrations, DB names, env)
 bundle exec rake upgrade:auto                  # Preflight + fix in one shot (used by entrypoints)
 
