@@ -184,9 +184,15 @@ See [Authorization Architecture](authorization.md) for details.
 ## Deployment Architecture
 
 ### Container-based
-```dockerfile
-# Multi-stage build for optimization
 
+> **Abridged.** This shows only the stage graph of the production
+> `Dockerfile` — the `FROM` lines and what each stage is for. Every stage's
+> actual contents are elided: the digest-pinned base image, the Ruby source
+> download and configure flags, jemalloc, the gem and Yarn installs, the asset
+> precompile, the non-root runtime user and the healthcheck. Read the repo's
+> `Dockerfile` for the build itself; this block is a map, not a copy.
+
+```dockerfile
 # Base stage - shared runtime foundation
 FROM registry.access.redhat.com/ubi9/ubi-minimal AS base   # tag + digest pinned in the real Dockerfile
 
