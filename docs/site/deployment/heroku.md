@@ -211,14 +211,14 @@ Migrations run automatically during the Procfile release phase on every deploy. 
 
 ```bash
 # Deploy updates (migrations run automatically)
-git push heroku main
+git push heroku master
 
 # Manual migration (only if needed)
 heroku run rails db:migrate
 
 # For large migrations, enable maintenance mode first
 heroku maintenance:on
-git push heroku main
+git push heroku master
 heroku maintenance:off
 ```
 

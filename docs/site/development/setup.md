@@ -211,7 +211,9 @@ Enabled by default. Create test users:
 # Rails console
 rails console
 
+# `name` is required (User validates its presence).
 User.create!(
+  name: 'Admin User',
   email: 'admin@example.com',
   password: 'S3cure!#Pass001',
   admin: true,
@@ -219,6 +221,7 @@ User.create!(
 )
 
 User.create!(
+  name: 'Test User',
   email: 'user@example.com',
   password: 'S3cure!#Pass001',
   confirmed_at: Time.now
@@ -584,6 +587,7 @@ rails generate migration AddAdminToUsers admin:boolean
 # db/seeds.rb
 10.times do |i|
   User.create!(
+    name: "User #{i}",
     email: "user#{i}@example.com",
     password: '1qaz!QAZ1qaz!QAZ'
   )
