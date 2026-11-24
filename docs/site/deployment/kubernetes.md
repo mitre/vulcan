@@ -1,8 +1,20 @@
 # Kubernetes Deployment
 
+::: danger These manifests are unverified
+Nothing on this page is exercised by CI, and the project does not publish a
+Helm chart. The manifests below are a starting point written from the
+Dockerfile and Compose files, not a deployment anyone runs: no job applies
+them to a cluster, so a broken selector or a missing Secret is not caught
+before you hit it.
+
+Treat them as a worked example to adapt and review, not as a tested recipe.
+Vulcan's CI-covered deployment paths are [Docker Compose](docker) and
+[bare metal](bare-metal).
+:::
+
 ## Overview
 
-Vulcan can be deployed to Kubernetes using the provided example manifests. This guide covers deployment, configuration, and best practices for running Vulcan in a Kubernetes environment.
+Vulcan can be deployed to Kubernetes using the example manifests below. This guide covers deployment, configuration, and best practices for running Vulcan in a Kubernetes environment.
 
 ## Prerequisites
 
@@ -98,8 +110,8 @@ data:
       user_registration:
         enabled: true
       
-      project_create_permission:
-        enabled: true
+      project:
+        create_permission_enabled: true
 ```
 
 Apply the ConfigMap:
@@ -285,8 +297,10 @@ metadata:
   name: vulcan
   namespace: vulcan
 spec:
+  # Must match the Deployment's pod labels (app: vulcan-web) or the Service
+  # gets zero endpoints and the Ingress routes nowhere.
   selector:
-    app: vulcan
+    app: vulcan-web
   ports:
   - protocol: TCP
     port: 80
@@ -327,12 +341,17 @@ spec:
 
 ### ConfigMap for Non-Sensitive Settings
 
+Environment variables are an alternative to the mounted `vulcan.yml` above.
+Give this ConfigMap a different name — reusing `vulcan-config` would replace
+the ConfigMap that holds the `vulcan-config.yml` key and break the volume
+mount's `subPath`.
+
 ```yaml
-# k8s-vulcan-config.yaml
+# k8s-vulcan-env.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vulcan-config
+  name: vulcan-env
   namespace: vulcan
 data:
   VULCAN_ENABLE_OIDC: "true"
@@ -340,6 +359,15 @@ data:
   VULCAN_OIDC_CLIENT_ID: "your-client-id"
   VULCAN_CONTACT_EMAIL: "vulcan-admin@example.com"
   VULCAN_APP_URL: "https://vulcan.example.com"
+```
+
+A ConfigMap only reaches the container if the Deployment asks for it, so add
+it to the `vulcan-web` container spec:
+
+```yaml
+        envFrom:
+        - configMapRef:
+            name: vulcan-env
 ```
 
 ### Database Setup
@@ -410,17 +438,22 @@ spec:
           - name: postgres-backup
             image: postgres:18
             env:
+            # The Secret created in step 2 of the Quick Start. This page never
+            # creates a "postgres-secret".
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: password
+                  name: vulcansecrets
+                  key: postgresql-password
             command:
             - /bin/bash
             - -c
             - |
               DATE=$(date +%Y%m%d_%H%M%S)
-              pg_dump -h postgres -U vulcan vulcan > /backup/vulcan_$DATE.sql
+              # Host is the PostgreSQL Service name. The Bitnami chart installed
+              # as release "postgres" below creates "postgres-postgresql";
+              # change it to match your own database Service.
+              pg_dump -h postgres-postgresql -U vulcan vulcan > /backup/vulcan_$DATE.sql
               # Upload to S3 or other storage
               # aws s3 cp /backup/vulcan_$DATE.sql s3://backups/vulcan/
             volumeMounts:
@@ -446,7 +479,8 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: vulcan
+    # The Deployment created above is named vulcan-web.
+    name: vulcan-web
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -495,9 +529,10 @@ metadata:
   name: vulcan-netpol
   namespace: vulcan
 spec:
+  # Selects the web pods by the labels the Deployment actually sets.
   podSelector:
     matchLabels:
-      app: vulcan
+      app: vulcan-web
   policyTypes:
   - Ingress
   - Egress
@@ -511,9 +546,11 @@ spec:
       port: 3000
   egress:
   - to:
+    # Match your PostgreSQL pods' labels. The Bitnami chart labels them
+    # app.kubernetes.io/name: postgresql, not app: postgres.
     - podSelector:
         matchLabels:
-          app: postgres
+          app.kubernetes.io/name: postgresql
     ports:
     - protocol: TCP
       port: 5432
@@ -525,18 +562,18 @@ spec:
 
 1. **Database Connection Failed**
    ```bash
-   kubectl logs -n vulcan deployment/vulcan
-   kubectl describe pod -n vulcan vulcan-xxx
+   kubectl logs -n vulcan deployment/vulcan-web
+   kubectl describe pod -n vulcan -l app=vulcan-web
    ```
 
 2. **Asset Compilation Issues**
    ```bash
-   kubectl exec -n vulcan deployment/vulcan -- rails assets:precompile
+   kubectl exec -n vulcan deployment/vulcan-web -- rails assets:precompile
    ```
 
 3. **Migration Pending**
    ```bash
-   kubectl exec -n vulcan deployment/vulcan -- rails db:migrate
+   kubectl exec -n vulcan deployment/vulcan-web -- rails db:migrate
    ```
 
 ### Debug Commands
@@ -546,10 +583,10 @@ spec:
 kubectl get pods -n vulcan
 
 # View logs
-kubectl logs -n vulcan -l app=vulcan --tail=100
+kubectl logs -n vulcan -l app=vulcan-web --tail=100
 
 # Execute shell in pod
-kubectl exec -it -n vulcan deployment/vulcan -- bash
+kubectl exec -it -n vulcan deployment/vulcan-web -- bash
 
 # Check events
 kubectl get events -n vulcan --sort-by='.lastTimestamp'
@@ -570,11 +607,9 @@ kubectl get events -n vulcan --sort-by='.lastTimestamp'
 
 ## Example Files
 
-Complete example manifests are available in the repository:
-- [k8s-vulcan-deployment-example.yaml](https://github.com/mitre/vulcan/blob/master/docs-old/k8s/k8s-vulcan-deployment-example.yaml)
-- [k8s-vulcan-config-example.yml](https://github.com/mitre/vulcan/blob/master/docs-old/k8s/k8s-vulcan-config-example.yml)
-- [k8s-vulcan-secrets-example.yaml](https://github.com/mitre/vulcan/blob/master/docs-old/k8s/k8s-vulcan-secrets-example.yaml)
-- [k8s-vulcan-ingress-example.yaml](https://github.com/mitre/vulcan/blob/master/docs-old/k8s/k8s-vulcan-nginx-ingress-example.yaml)
+The repository ships no Kubernetes manifests; the `docs-old/k8s/` directory
+these links once pointed at no longer exists. The YAML on this page is the
+example, and it is unverified — see the warning at the top.
 
 ## Next Steps
 
