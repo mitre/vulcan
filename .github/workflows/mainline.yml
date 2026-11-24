@@ -100,7 +100,13 @@ jobs:
           ironbank_project_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan-mainline.git
           git_commit_author_name: "Automated Vulcan Mainline"
           git_commit_author_email: "saf@mitre.org"
+          # Each `sed` is paired with a `grep -qxF` assertion on the value it was
+          # supposed to write. `sed` exits 0 when its pattern matches nothing, so
+          # without the assertion a missing or reshaped `ARG VULCAN_VERSION=` line in
+          # repo1 would silently leave a stale version argument in the built image.
           update_commands: |
             yq e -i '.tags[0]=\"${{ github.sha }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ github.sha }}\" | .resources[0].tag=\"mitre/vulcan:${{ github.sha }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ github.sha }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
             sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ github.sha }}/' Dockerfile
+            grep -qxF 'ARG VULCAN_VERSION=${{ github.sha }}' Dockerfile || { echo 'Iron Bank update failed: Dockerfile has no line ARG VULCAN_VERSION=${{ github.sha }} after sed'; exit 1; }
             sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ github.sha }}.arm64/' Dockerfile.arm64
+            grep -qxF 'ARG VULCAN_VERSION=${{ github.sha }}.arm64' Dockerfile.arm64 || { echo 'Iron Bank update failed: Dockerfile.arm64 has no line ARG VULCAN_VERSION=${{ github.sha }}.arm64 after sed'; exit 1; }
