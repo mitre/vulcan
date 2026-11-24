@@ -371,26 +371,61 @@ describe("useCommentsStore", () => {
       getReviewResponses.mockResolvedValue(mockReplies);
       const store = useCommentsStore();
 
-      const result = await store.fetchReplies(38, 42);
+      const result = await store.fetchReplies(42);
 
       expect(getReviewResponses).toHaveBeenCalledWith(42);
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].id).toBe(7);
     });
 
-    it("caches replies scoped by componentId + parentReviewId", async () => {
+    // Replies are keyed by parent review id alone: /reviews/:id/responses
+    // takes no component, and review ids are globally unique. A component
+    // prefix would cache one server resource under several keys and hide the
+    // entry from every caller that has no component id to hand.
+    it("caches replies by parent review id", async () => {
       getReviewResponses.mockResolvedValue({
         data: { rows: [{ id: 7 }] },
       });
       const store = useCommentsStore();
 
-      await store.fetchReplies(38, 42);
-      await store.fetchReplies(38, 42);
+      await store.fetchReplies(42);
+      await store.fetchReplies(42);
 
       expect(getReviewResponses).toHaveBeenCalledTimes(1);
+      expect(Object.keys(store.cache)).toEqual(["replies:42"]);
     });
 
-    it("invalidateCache clears reply caches for the component", async () => {
+    it("caches each parent's replies separately", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7 }] },
+      });
+      const store = useCommentsStore();
+
+      await store.fetchReplies(42);
+      await store.fetchReplies(50);
+
+      expect(getReviewResponses).toHaveBeenCalledTimes(2);
+      expect(Object.keys(store.cache).sort()).toEqual(["replies:42", "replies:50"]);
+    });
+
+    it("invalidateReplies drops only that parent's thread", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7 }] },
+      });
+      const store = useCommentsStore();
+
+      await store.fetchReplies(42);
+      await store.fetchReplies(50);
+
+      store.invalidateReplies(42);
+      expect(Object.keys(store.cache)).toEqual(["replies:50"]);
+    });
+
+    // A mutation that invalidates a component's comment lists may also have
+    // created, moved or destroyed a reply, and reply keys carry no component
+    // to narrow by — so every cached thread goes. Comment lists stay
+    // component-scoped.
+    it("invalidateCache clears cached reply threads along with the component's lists", async () => {
       getReviewResponses.mockResolvedValue({
         data: { rows: [{ id: 7 }] },
       });
@@ -398,21 +433,9 @@ describe("useCommentsStore", () => {
       const store = useCommentsStore();
 
       await store.fetchComments(38, {});
-      await store.fetchReplies(38, 42);
-      expect(Object.keys(store.cache)).toHaveLength(2);
-
-      store.invalidateCache(38);
-      expect(Object.keys(store.cache)).toHaveLength(0);
-    });
-
-    it("invalidateCache does not clear replies for other components", async () => {
-      getReviewResponses.mockResolvedValue({
-        data: { rows: [{ id: 7 }] },
-      });
-      const store = useCommentsStore();
-
-      await store.fetchReplies(38, 42);
-      await store.fetchReplies(99, 50);
+      await store.fetchComments(99, {});
+      await store.fetchReplies(42);
+      expect(Object.keys(store.cache)).toHaveLength(3);
 
       store.invalidateCache(38);
       expect(Object.keys(store.cache)).toHaveLength(1);
@@ -423,7 +446,7 @@ describe("useCommentsStore", () => {
       getReviewResponses.mockRejectedValue(new Error("fail"));
       const store = useCommentsStore();
 
-      await expect(store.fetchReplies(38, 42)).rejects.toThrow("fail");
+      await expect(store.fetchReplies(42)).rejects.toThrow("fail");
       expect(store.error).toBeInstanceOf(Error);
     });
   });

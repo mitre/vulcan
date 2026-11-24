@@ -76,7 +76,6 @@ export default {
   name: "CommentThread",
   components: { ReactionButtons, UserBadge },
   props: {
-    componentId: { type: [Number, String], default: null },
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
     canReply: { type: Boolean, default: true },
@@ -89,7 +88,9 @@ export default {
     },
   },
   setup(props) {
-    const thread = useCommentThread(props.componentId, props.parentReviewId);
+    // Getter, not props.parentReviewId: hosts swap the parent on a live
+    // instance (triage queue navigation), and the thread must follow it.
+    const thread = useCommentThread(() => props.parentReviewId);
     const { toggle: toggleReactionApi } = useCommentReactions();
     const { friendlyDateTime } = useDateFormat();
     return { ...thread, toggleReactionApi, friendlyDateTime };
@@ -108,10 +109,11 @@ export default {
     },
   },
   watch: {
+    // The composable drops the previous parent's replies; expansion is this
+    // component's policy, so it resets here and reloads if it stays open.
     parentReviewId() {
-      this.replies = [];
-      this.loaded = false;
       this.expanded = this.initiallyExpanded;
+      this.loadIfWanted();
     },
     initiallyExpanded(val) {
       if (val && !this.loaded && !this.loading) {
@@ -128,11 +130,18 @@ export default {
     },
   },
   mounted() {
-    if (this.initiallyExpanded && this.responsesCount > 0) {
-      this.fetch();
-    }
+    this.loadIfWanted();
   },
   methods: {
+    // One rule for "we should be holding this parent's replies": the thread
+    // is open, or the host asked for them up front. Shared by mount and by
+    // parent switches, which land on a freshly emptied thread.
+    loadIfWanted() {
+      if (!this.expanded && !this.initiallyExpanded) return;
+      if (this.responsesCount > 0 && !this.loaded && !this.loading) {
+        this.fetch();
+      }
+    },
     toggleReaction(reply, kind) {
       const idx = this.replies.findIndex((r) => r.id === reply.id);
       if (idx < 0) return;

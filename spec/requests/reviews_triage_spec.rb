@@ -54,6 +54,30 @@ RSpec.describe 'Reviews' do
         expect(response_review.comment).to include('stricter regex')
       end
 
+      # REQUIREMENT: responses_count on the triaged review is the true number
+      # of replies that comment has — the response created by THIS request
+      # included. A client reading the payload therefore already has the new
+      # total and must not add the reply a second time. The reply is also
+      # immediately retrievable from the parent's thread endpoint, so an
+      # expanded thread can show what the count promises.
+      it 'reports responses_count including the reply it just created' do
+        patch "/reviews/#{comment.id}/triage", params: {
+          triage_status: 'concur_with_comment',
+          response_comment: 'Adopting with a stricter regex.'
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        triage_body = response.parsed_body
+        expect(comment.responses.count).to eq(1)
+        expect(triage_body.dig('review', 'responses_count')).to eq(1)
+        expect(triage_body.dig('response_review', 'responding_to_review_id')).to eq(comment.id)
+
+        get "/reviews/#{comment.id}/responses"
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['rows'].pluck('id'))
+          .to eq([triage_body.dig('response_review', 'id')])
+      end
+
       it 'rejects triage_status non_concur without response_comment' do
         patch "/reviews/#{comment.id}/triage", params: {
           triage_status: 'non_concur'
