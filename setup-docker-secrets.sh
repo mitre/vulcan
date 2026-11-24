@@ -47,8 +47,6 @@ fi
 echo "Generating secure secrets..."
 POSTGRES_PASSWORD=$(openssl rand -hex 33)
 SECRET_KEY_BASE=$(openssl rand -hex 64)
-CIPHER_PASSWORD=$(openssl rand -hex 64)
-CIPHER_SALT=$(openssl rand -hex 32)
 
 # Process template line by line, replacing secret placeholders with generated values.
 # This avoids sed entirely - no OS-specific behavior (macOS vs GNU sed).
@@ -56,8 +54,6 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     case "$line" in
         POSTGRES_PASSWORD=*) echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" ;;
         SECRET_KEY_BASE=*)   echo "SECRET_KEY_BASE=$SECRET_KEY_BASE" ;;
-        CIPHER_PASSWORD=*)   echo "CIPHER_PASSWORD=$CIPHER_PASSWORD" ;;
-        CIPHER_SALT=*)       echo "CIPHER_SALT=$CIPHER_SALT" ;;
         *)                   echo "$line" ;;
     esac
 done < "$TEMPLATE" > .env

@@ -274,7 +274,7 @@ docker compose up -> PostgreSQL starts -> health check passes
 ### Defaults
 - Non-secret ENV defaults set in Dockerfile (auth, SSL, first-user-admin)
 - Database credentials use variable substitution in docker-compose.yml: `${POSTGRES_PASSWORD:-postgres}`
-- Secrets (SECRET_KEY_BASE, CIPHER_PASSWORD, CIPHER_SALT) must be provided externally
+- Secrets (SECRET_KEY_BASE, POSTGRES_PASSWORD) must be provided externally
 - No static secrets in config files
 
 ---
@@ -284,7 +284,7 @@ docker compose up -> PostgreSQL starts -> health check passes
 ### Environment Variables
 
 See `ENVIRONMENT_VARIABLES.md` for complete list. Key ones:
-- `SECRET_KEY_BASE`, `CIPHER_PASSWORD`, `CIPHER_SALT` - Required secrets
+- `SECRET_KEY_BASE` - Required secret
 - `DATABASE_URL` - PostgreSQL connection (or individual POSTGRES_* vars)
 - `VULCAN_ENABLE_OIDC`, `VULCAN_OIDC_ISSUER_URL`, `VULCAN_OIDC_CLIENT_ID/SECRET`
 - `VULCAN_ENABLE_LDAP`, `VULCAN_LDAP_*`

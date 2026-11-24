@@ -21,7 +21,7 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 - **👥 Collaborative Authoring**: Multiple authors can work on control sets with built-in review workflows
 - **🔗 Cross-Reference Capabilities**: Look up related controls across published STIGs
 - **📚 STIG Library**: View and reference DISA-published STIG content
-- **🔒 Security**: Database encryption for confidential data using symmetric encryption
+- **🔒 Security**: PBKDF2-SHA512 password hashing, DoD-aligned password policy, account lockout, rate limiting, session limits, and a full audit trail
 - **🔑 Flexible Authentication**: Support for local, GitHub, LDAP, and OIDC/OKTA providers
 - **📬 Notifications**: Email and Slack integration for workflow updates
 

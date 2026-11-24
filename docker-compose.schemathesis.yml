@@ -44,8 +44,6 @@ services:
       RAILS_ENV: production
       DATABASE_URL: postgres://postgres:${SCHEMATHESIS_DB_PASSWORD:-schemathesis}@db/vulcan_schemathesis
       SECRET_KEY_BASE: ${SCHEMATHESIS_SECRET_KEY_BASE:-schemathesis-test-only-not-for-production-use-deadbeef1234567890}
-      CIPHER_PASSWORD: ${SCHEMATHESIS_CIPHER_PASSWORD:-schemathesis-cipher-not-for-production}
-      CIPHER_SALT: ${SCHEMATHESIS_CIPHER_SALT:-schemathesis-salt-not-for-production}
       RAILS_FORCE_SSL: "false"
       RAILS_LOG_TO_STDOUT: "true"
       VULCAN_FIRST_USER_ADMIN: "true"

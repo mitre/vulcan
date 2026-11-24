@@ -48,8 +48,6 @@ type: Opaque
 stringData:
   postgresql-password: "secure_database_password"
   key-base: "$(openssl rand -hex 64)"
-  cipher-password: "$(openssl rand -hex 32)"
-  cipher-salt: "$(openssl rand -hex 32)"
   ldap-password: "ldap_service_account_password"
   oidc-client-secret: "your_oidc_client_secret"
 ```
@@ -58,10 +56,6 @@ Generate secure values:
 ```bash
 # Generate SECRET_KEY_BASE
 echo "key-base: $(openssl rand -hex 64)"
-
-# Generate cipher keys
-echo "cipher-password: $(openssl rand -hex 32)"
-echo "cipher-salt: $(openssl rand -hex 32)"
 ```
 
 Apply the secret:
@@ -184,18 +178,6 @@ spec:
             secretKeyRef:
               name: vulcansecrets
               key: key-base
-        
-        # Security Keys
-        - name: CIPHER_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: vulcansecrets
-              key: cipher-password
-        - name: CIPHER_SALT
-          valueFrom:
-            secretKeyRef:
-              name: vulcansecrets
-              key: cipher-salt
         
         # Application Configuration
         - name: VULCAN_WELCOME_TEXT

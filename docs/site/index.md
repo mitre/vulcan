@@ -46,7 +46,7 @@ const features = [
   { icon: Link2, title: 'Cross-Reference STIGs',
     details: 'Look up related controls across all published STIGs for consistency' },
   { icon: ShieldCheck, title: 'Enterprise Security',
-    details: 'Database encryption, flexible authentication with OIDC, LDAP, and GitHub' },
+    details: 'Flexible authentication with OIDC, LDAP, and GitHub, plus audit trails, account lockout, and rate limiting' },
 ]
 
 const involvement = [
