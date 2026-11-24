@@ -20,6 +20,12 @@ import {
 
 const MAX_CACHE_ENTRIES = 50;
 
+// Reply threads are keyed by parent review id ALONE. `/reviews/:id/responses`
+// takes no component — review ids are globally unique, so a component prefix
+// would cache the same server resource under several keys and make the entry
+// unreachable for any caller that does not know (or have) a component id.
+const REPLIES_PREFIX = "replies:";
+
 export const useCommentsStore = defineStore("comments", () => {
   const cache = ref({});
   const loadingCount = ref(0);
@@ -98,8 +104,12 @@ export const useCommentsStore = defineStore("comments", () => {
     return result;
   }
 
-  async function fetchReplies(componentId, parentReviewId) {
-    const key = `${componentId}:replies:${parentReviewId}`;
+  function repliesCacheKey(parentReviewId) {
+    return `${REPLIES_PREFIX}${parentReviewId}`;
+  }
+
+  async function fetchReplies(parentReviewId) {
+    const key = repliesCacheKey(parentReviewId);
     if (cache.value[key]) return cache.value[key];
     const result = await fetchAndNormalize(getReviewResponses, parentReviewId);
     setCacheEntry(key, result);
@@ -162,17 +172,22 @@ export const useCommentsStore = defineStore("comments", () => {
     return fetchAndNormalize(getUserComments, userId, params);
   }
 
+  // Drops the component's comment lists AND every cached reply thread. Any
+  // mutation that invalidates a comment list may also have created, moved or
+  // destroyed a reply (triage-with-response, merge, hard-delete), and reply
+  // keys carry no component to narrow by — so they all go. Replies are one
+  // cheap request each; showing a stale thread is a correctness bug.
   function invalidateCache(componentId) {
     const prefix = `${componentId}:`;
     const remaining = {};
     Object.keys(cache.value).forEach((k) => {
-      if (!k.startsWith(prefix)) remaining[k] = cache.value[k];
+      if (!k.startsWith(prefix) && !k.startsWith(REPLIES_PREFIX)) remaining[k] = cache.value[k];
     });
     cache.value = remaining;
   }
 
-  function invalidateReplies(componentId, parentReviewId) {
-    removeCacheEntry(`${componentId}:replies:${parentReviewId}`);
+  function invalidateReplies(parentReviewId) {
+    removeCacheEntry(repliesCacheKey(parentReviewId));
   }
 
   function $reset() {
