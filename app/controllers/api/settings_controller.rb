@@ -24,7 +24,9 @@ module Api
           version: Settings.consent.version.to_i,
           title: Settings.consent.title,
           content: Settings.consent.content,
-          ttl: Settings.consent.ttl.to_i
+          # Declared as seconds by SettingsResponse.yaml, so a suffixed
+          # setting ("24h") must be resolved here, not cast with to_i.
+          ttl: TimeoutParser.parse(Settings.consent.ttl, bare_unit: :seconds, fallback: 0)
         },
         local_login: {
           enabled: Settings.local_login.enabled
