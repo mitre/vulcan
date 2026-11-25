@@ -110,7 +110,7 @@ Defaults give you: local login, registration, first-user-becomes-admin, no SMTP,
 | `VULCAN_ENABLE_LOCAL_LOGIN` | true | **false** | External auth is more secure |
 | `VULCAN_ENABLE_USER_REGISTRATION` | true | **false** | Users provisioned via OIDC/LDAP |
 | `VULCAN_FIRST_USER_ADMIN` | true | **false** | Use `VULCAN_ADMIN_EMAIL` instead |
-| `VULCAN_SESSION_TIMEOUT` | 1h | **15m** | DoD standard (STIG AC-12) |
+| `VULCAN_SESSION_TIMEOUT` | 15m | **15m** | DoD standard (STIG AC-12), now the default |
 | `VULCAN_ENABLE_REMEMBER_ME` | true | **false** | Disable for high-security environments |
 | `VULCAN_ENABLE_SMTP` | false | **true** | Enables email notifications and unlock |
 | `RAILS_FORCE_SSL` | true | **true** | Keep default |
@@ -156,7 +156,7 @@ Use `./setup-docker-secrets.sh` to generate all required secrets automatically, 
 
 - **enabled:** Allows for users to be able to log in as a local user instead of using ldap. `(ENV: VULCAN_ENABLE_LOCAL_LOGIN)(default: true)`
 - **email_confirmation:** Turns on email confirmation for local registration. `(ENV: VULCAN_ENABLE_EMAIL_CONFIRMATION)(default: false)`
-- **session_timeout:** Automatically logs user out after a period of inactivity. Accepts explicit suffixes (`30s`, `15m`, `1h`) or plain numbers where 1-9 = hours, 10-299 = minutes, 300+ = seconds. DoD standard is 900 seconds (15 minutes). `(ENV: VULCAN_SESSION_TIMEOUT)(default: 1h)`
+- **session_timeout:** Automatically logs user out after a period of inactivity. Accepts explicit suffixes (`30s`, `15m`, `1h`) or plain numbers where 1-9 = hours, 10-299 = minutes, 300+ = seconds. DoD standard is 900 seconds (15 minutes), which is the default. `(ENV: VULCAN_SESSION_TIMEOUT)(default: 900)`
 
 ## Configure User Registration
 - **enabled:** Allows users to register themselves on the Vulcan app. `(ENV: VULCAN_ENABLE_USER_REGISTRATION)(default: true)`

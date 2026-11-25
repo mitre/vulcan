@@ -46,7 +46,7 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_ENABLE_LOCAL_LOGIN` | Enable local username/password login | `true` | `true` or `false` |
 | `VULCAN_ENABLE_EMAIL_CONFIRMATION` | Require email confirmation for new users | `false` | `true` or `false` |
-| `VULCAN_SESSION_TIMEOUT` | Session inactivity timeout. Accepts explicit suffix (`30s`, `15m`, `1h`) or plain numbers (1-9 = hours, 10-299 = minutes, 300+ = seconds). | `600` (10 minutes) | `900` (DoD 15-min), `15m`, `1h` |
+| `VULCAN_SESSION_TIMEOUT` | Session inactivity timeout. Accepts explicit suffix (`30s`, `15m`, `1h`) or plain numbers (1-9 = hours, 10-299 = minutes, 300+ = seconds). | `900` (15 minutes, DoD AC-12) | `600` (10-min admin standard), `15m`, `1h` |
 | `VULCAN_ENABLE_REMEMBER_ME` | Show "Remember Me" checkbox on login forms | `true` | `false` for DoD |
 | `VULCAN_REMEMBER_ME_DURATION` | How long Remember Me keeps session alive. Same format as session timeout. | `8h` | `1d`, `28800` |
 

@@ -35,12 +35,16 @@ defaults: &defaults
     # 1h). Emitted with to_json (NOT to_i) so the raw suffix value reaches
     # TimeoutParser — casting to Integer here strips the suffix ("5m" -> 5 ->
     # parsed as 5 HOURS) and silently defeats the parser.
-    # Default: 3600 (1 hour). This is an INACTIVITY window: Devise
-    # :timeoutable resets the clock on every authenticated request (see
+    # Default: 900 (15 minutes), the DoD AC-12 standard for non-privileged
+    # users (V-222389). This is an INACTIVITY window: Devise :timeoutable
+    # resets the clock on every authenticated request (see
     # config/initializers/active_record_session_store_dirty_data.rb, without
-    # which the reset is silently dropped). Tightening this toward the DoD
-    # AC-12 15-minute standard is a separate, now-unblocked decision.
-    session_timeout: <%= (ENV['VULCAN_SESSION_TIMEOUT'] || 3600).to_json %>
+    # which the reset is silently dropped). 900 is only safe BECAUSE that
+    # reset works — it was 3600 while the reset was broken, since a 15-minute
+    # fixed window measured from login would have logged people out mid-task.
+    # Admins nominally require 10 minutes (V-222390), but Devise has no
+    # per-scope timeout, so a deployment needing that sets 600 for everyone.
+    session_timeout: <%= (ENV['VULCAN_SESSION_TIMEOUT'] || 900).to_json %>
     remember_me_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_REMEMBER_ME']) != false %>
     # A duration for TimeoutParser: plain seconds (28800) or a suffix (8h, 480m).
     # Emitted with to_json (NOT to_i) so the raw suffix value reaches

@@ -424,14 +424,16 @@ RSpec.describe 'User Registrations' do
   end
 
   describe 'session timeout default' do
-    # The prior 600s (10 min) default timed users out while they were actively
-    # working. A proper DoD AC-12 inactivity-based timeout (reset on activity)
-    # is a tracked follow-up; until then the effective default is 1 hour.
+    # 900s (15 min) is the DoD AC-12 standard for non-privileged users
+    # (V-222389). It is only a safe default because the timeout is genuinely
+    # inactivity-based: an earlier 600s default was reverted to 3600s when
+    # active users were being logged out mid-task, which turned out to be the
+    # dropped-session-write bug, not the window being too short.
     # Assert the EFFECTIVE (parsed) timeout, not the raw setting: the raw value
     # is env-dependent (VULCAN_SESSION_TIMEOUT may be set) and only becomes a
     # duration once TimeoutParser interprets it — the same path Devise uses.
-    it 'resolves to a 1-hour (3600s) effective timeout by default' do
-      expect(TimeoutParser.parse(Settings.local_login.session_timeout)).to eq(3600)
+    it 'resolves to a 15-minute (900s) effective timeout by default' do
+      expect(TimeoutParser.parse(Settings.local_login.session_timeout)).to eq(900)
     end
   end
 
