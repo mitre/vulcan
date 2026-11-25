@@ -5,8 +5,8 @@ require 'rails_helper'
 ##
 # Hard block against the docs site silently lagging a release.
 #
-# release_infrastructure_spec already enforces VERSION == package.json ==
-# Vulcan::VERSION, but the docs-site "latest release" surfaces were never
+# version_spec already enforces VERSION == package.json == Vulcan::VERSION,
+# but the docs-site "latest release" surfaces were never
 # covered: v2.4.1 shipped while the docs still advertised v2.3.7, because the
 # version bump swept the code but not docs/site — and even the first docs fix
 # missed the VitePress nav dropdown in config.mjs. This spec asserts EVERY
