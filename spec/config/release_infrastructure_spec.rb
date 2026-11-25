@@ -57,15 +57,48 @@ RSpec.describe 'release infrastructure' do
   end
 
   # Budgets that have already timed out in production: 20 minutes twice
-  # (2.4.0, 2.4.1) and 45 minutes once (2.4.2) - all on the emulated path.
+  # (2.4.0, 2.4.1) and 45 minutes once (2.4.2) - all on the emulated path,
+  # which the mainline runs show needs 62-64 minutes.
   def failed_budgets
     [20, 45]
   end
 
-  # The slowest Build Cloud release publish on record (v2.3.6, 10m26s). A
-  # budget below this would start failing good builds.
-  def slowest_measured_publish_minutes
-    11
+  # Slowest build observed per driver, rounded up to whole minutes:
+  #   cloud     10m26s (v2.3.6 release)
+  #   emulated  64m10s (mainline run 43060030274; the other four recent
+  #             mainline builds were 62m13s, 62m35s, 63m15s, 63m43s)
+  def slowest_measured_minutes
+    { 'cloud' => 11, 'emulated' => 65 }
+  end
+
+  # The driver every caller must resolve to on its own automatic trigger.
+  # Build Cloud minutes are one small monthly pot shared across the whole
+  # organisation, so the free path is the default everywhere and the fast path
+  # is opt-in.
+  def default_builder
+    'emulated'
+  end
+
+  def callers
+    %w[release.yml mainline.yml]
+  end
+
+  # The job-level `timeout-minutes` expression, as { builder => minutes }.
+  def publish_budgets
+    expr = workflow_yaml('docker-publish.yml')['jobs']['publish']['timeout-minutes'].to_s
+    cloud, emulated = expr.scan(/\d+/).map(&:to_i)
+    { 'cloud' => cloud, 'emulated' => emulated }
+  end
+
+  def publish_steps
+    workflow_yaml('docker-publish.yml')['jobs']['publish']['steps']
+  end
+
+  # What each caller passes for `builder`, per caller workflow.
+  def builder_expression(name)
+    workflow_yaml(name)['jobs'].values
+                               .select { |j| j['uses'].to_s.include?('docker-publish.yml') }
+                               .map { |j| j.dig('with', 'builder') }
   end
 
   def release_doc
@@ -122,51 +155,224 @@ RSpec.describe 'release infrastructure' do
       end
     end
 
-    it 'selects the build driver unconditionally' do
-      steps = workflow_yaml('docker-publish.yml')['jobs']['publish']['steps']
-      buildx = steps.select { |s| s['uses'].to_s.include?('docker/setup-buildx-action') }
+    # Both drivers are legitimate and the choice is a cost decision, so this
+    # no longer asserts a single driver. It asserts the property that actually
+    # broke: the choice must come from a declared workflow_call input with a
+    # default, which is populated on every trigger, and never from event
+    # payload fields that are empty on `release: published` and `push:`.
+    it 'chooses the driver from a declared input with a default' do
+      builder = workflow_on('docker-publish.yml')['workflow_call']['inputs']['builder']
 
-      expect(buildx.size).to eq(1),
-                             'there must be exactly one buildx setup step. More than one means the driver ' \
-                             'is being chosen at runtime, which is how the release build regressed.'
-      expect(buildx.first).not_to have_key('if'),
-                                  'the buildx setup step must not be conditional — a conditionally-skipped ' \
-                                  'builder silently falls through to a path that cannot complete.'
-      expect(buildx.first.dig('with', 'driver')).to eq('cloud'),
-                                                    'the publish must use the Docker Build Cloud driver; ' \
-                                                    'emulated multi-arch builds of this image do not finish'
+      expect(builder).not_to be_nil, 'docker-publish.yml must take the driver as a workflow_call input'
+      expect(builder['default']).to eq(default_builder),
+                                    'the driver must default to the free path. Defaulting to Build Cloud ' \
+                                    "would spend the organisation's small shared minute pot on any caller " \
+                                    'that forgets to pass a driver.'
     end
 
-    it 'does not set up QEMU emulation on the publish path' do
-      publish_workflows.each do |name|
-        expect(workflow_expressions(name)).not_to include('setup-qemu-action'),
-                                                  "#{name} sets up QEMU. Emulating arm64 while compiling Ruby and " \
-                                                  'jemalloc from source on a shared 4-vCPU runner is the measured cause ' \
-                                                  'of three consecutive release timeouts.'
+    # The generalised form of the original bug, and the guard most worth
+    # having. `6aa8d462` gated the Build Cloud driver on
+    # `github.event.inputs.use_build_cloud`, a field that exists only for
+    # workflow_dispatch. On the `release: published` and `push:` triggers the
+    # condition was simply false, so the workflow took the other branch with
+    # nobody choosing it. Any step condition reading the event payload has the
+    # same failure mode, so none are allowed: conditions must read the
+    # workflow's own declared inputs, which are populated on every trigger.
+    it 'never conditions a publish step on anything outside its declared inputs' do
+      conditions = publish_steps.filter_map { |step| [step['name'], step['if']] if step.key?('if') }
+
+      expect(conditions).not_to be_empty
+
+      aggregate_failures do
+        conditions.each do |name, condition|
+          referenced = condition.to_s.scan(/\b(?:github|env|vars|secrets|inputs)\.[\w.]+/).uniq
+          expect(referenced).to all(start_with('inputs.')),
+                                "the step '#{name}' is conditioned on #{referenced.join(', ')}. A publish " \
+                                "step's condition must read only this workflow's declared inputs; " \
+                                'anything from the event payload is empty on the triggers that matter and ' \
+                                'silently selects the opposite branch.'
+        end
+      end
+    end
+
+    it 'guards each driver setup step on the builder input alone' do
+      driver_steps = publish_steps.select do |step|
+        step['uses'].to_s.match?(%r{docker/setup-(buildx|qemu)-action})
+      end
+
+      expect(driver_steps).not_to be_empty
+
+      aggregate_failures do
+        driver_steps.each do |step|
+          condition = step['if'].to_s
+          expect(condition).to match(/\Ainputs\.builder == '(?:cloud|emulated)'\z/),
+                               "the step '#{step['name']}' is guarded on #{condition.inspect}. Driver " \
+                               'setup must be keyed on inputs.builder and nothing else - the release ' \
+                               'outage came from keying it on a context that is empty on the real trigger.'
+        end
+      end
+    end
+
+    it 'puts the cloud and emulated drivers on mutually exclusive paths' do
+      driver_steps = publish_steps.filter_map do |step|
+        next unless step['uses'].to_s.match?(%r{docker/setup-(buildx|qemu)-action})
+
+        [step['if'].to_s[/'(cloud|emulated)'/, 1], step]
+      end
+      by_builder = driver_steps.group_by(&:first).transform_values { |pairs| pairs.map(&:last) }
+
+      aggregate_failures do
+        expect(by_builder.keys).to contain_exactly('cloud', 'emulated'),
+                                   'both drivers must be reachable: cloud for releases, emulated as the ' \
+                                   'free path for mainline and as the release fallback when the shared ' \
+                                   'Build Cloud pot is exhausted'
+
+        cloud_buildx = by_builder['cloud'].select { |s| s['uses'].include?('setup-buildx-action') }
+        expect(cloud_buildx.size).to eq(1)
+        expect(cloud_buildx.first.dig('with', 'driver')).to eq('cloud'),
+                                                            'the cloud path must actually use the cloud driver'
+
+        expect(by_builder['emulated'].map { |s| s['uses'][%r{docker/setup-\w+}] })
+          .to include('docker/setup-qemu'),
+              'the emulated path must set up QEMU, or an arm64 leg cannot be built at all'
+        expect(by_builder['cloud'].pluck('uses').join)
+          .not_to include('setup-qemu-action'),
+                  'the cloud path must not set up QEMU; Build Cloud builds each architecture natively'
+      end
+    end
+  end
+
+  describe 'driver cost policy' do
+    # Build Cloud minutes are a single small monthly pot shared across the
+    # whole organisation. The free path is therefore the default on every
+    # automatic trigger, and the fast path is something a human asks for.
+    it 'defaults every automatic trigger to the free driver' do
+      aggregate_failures do
+        callers.each do |name|
+          exprs = builder_expression(name)
+          expect(exprs).not_to be_empty, "#{name} must state which driver it builds on"
+          expect(exprs).to all(match(/\|\|\s*'#{default_builder}'\s*\}\}/)),
+                           "#{name} resolves the driver as #{exprs.inspect}. The final fallback must be " \
+                           "'#{default_builder}', so a trigger that supplies nothing gets the free path " \
+                           "rather than spending the organisation's shared Build Cloud minutes."
+        end
+      end
+    end
+
+    # The other half of the original bug: `github.event.inputs` is empty on
+    # `release: published`, so before this change there was no way to ask for
+    # the fast driver on a real release. 2.4.1 could only be rescued by
+    # cancelling the release run and re-dispatching by hand.
+    it 'makes the Build Cloud opt-in reachable on the release trigger' do
+      expr = builder_expression('release.yml').first
+
+      expect(expr).to include('vars.'),
+                      "release.yml resolves the driver as #{expr.inspect}. Dispatch inputs are empty on " \
+                      'the release: published trigger, so the opt-in must also be readable from a ' \
+                      'repository variable — otherwise the fast driver is unaskable on a real release.'
+      expect(expr).to include('inputs.builder'),
+                      'a re-dispatch must still be able to override the driver'
+    end
+
+    # Whichever path is taken, it must be visible. The original defect was a
+    # silently-selected path; the same shape with the polarity reversed would
+    # be just as bad.
+    it 'records the selected driver in the run' do
+      resolve = publish_steps.find { |step| step['run'].to_s.include?('GITHUB_STEP_SUMMARY') }
+
+      expect(resolve).not_to be_nil,
+                             'docker-publish.yml must write the resolved driver to the run summary, so the ' \
+                             'path taken is never invisible'
+      expect(resolve['run']).to include('::error::'),
+                                'an unrecognised driver must fail loudly rather than fall through'
+    end
+
+    it 'lets a human override the driver on both workflows' do
+      aggregate_failures do
+        callers.each do |name|
+          dispatch = workflow_on(name)['workflow_dispatch']
+          expect(dispatch).to be_a(Hash), "#{name} must be dispatchable to override the driver"
+          builder = dispatch.dig('inputs', 'builder')
+          expect(builder).not_to be_nil, "#{name} must expose a builder input on workflow_dispatch"
+          expect(builder['options']).to contain_exactly('cloud', 'emulated'),
+                                        "#{name}'s builder input must offer both drivers"
+          expect(builder['default']).to eq(default_builder),
+                                        "#{name}'s dispatch default must be the free driver"
+        end
+      end
+    end
+
+    it 'keeps the Build Cloud endpoint overridable' do
+      endpoint = publish_steps.find { |s| s.dig('with', 'driver') == 'cloud' }.dig('with', 'endpoint')
+
+      expect(endpoint).to include('vars.'),
+                          'the Build Cloud endpoint must come from a repository/org variable so it can be ' \
+                          'repointed without editing the workflow'
+    end
+
+    it 'cancels superseded mainline builds but never a release publish' do
+      aggregate_failures do
+        expect(workflow_yaml('mainline.yml')['concurrency']['cancel-in-progress']).to be(true),
+                                                                                      'mainline builds take about an hour, so pushes outpace them; superseded ' \
+                                                                                      'master pushes must be cancelled rather than queued'
+        expect(workflow_yaml('release.yml')['concurrency']['cancel-in-progress']).to be(false),
+                                                                                     'a release publish must never be cancelled mid-flight - a half-pushed ' \
+                                                                                     'manifest list is worse than a slow one'
       end
     end
   end
 
   describe 'publish job budget' do
-    # The budget must sit between the slowest build that has actually
-    # succeeded and the budget that was already raised once and still failed.
-    # Both bounds matter: too low fails good builds, too high means a wedged
-    # build burns most of an hour before anyone is told.
-    it 'bounds the publish timeout by measurement, not by optimism' do
-      default = workflow_on('docker-publish.yml')['workflow_call']['inputs']
-                .dig('timeout_minutes', 'default')
-
-      expect(default).to be_a(Integer)
+    # The budget that failed was not wrong because 45 is a bad number; it was
+    # wrong because it was applied to a driver that needs 65. Assert the
+    # budget per driver, so "slow driver under the fast driver's budget" -
+    # the exact shape of the 2.4.x outage - cannot be expressed.
+    it 'budgets each driver against its own slowest measured build' do
       aggregate_failures do
-        expect(default).to be < failed_budgets.max,
-                           "the publish budget is #{default} minutes, but #{failed_budgets.max} was " \
-                           'already tried and still timed out. A budget is not a fix; ground it in a ' \
-                           'measured successful build.'
-        expect(default).to be >= slowest_measured_publish_minutes,
-                           "the publish budget is #{default} minutes, below the slowest publish that has " \
-                           "actually succeeded (#{slowest_measured_publish_minutes}) - it would cancel " \
-                           'good builds.'
+        slowest_measured_minutes.each do |builder, slowest|
+          budget = publish_budgets[builder]
+
+          expect(budget).to be_a(Integer), "no timeout could be read for the #{builder} driver"
+          expect(budget).to be >= slowest,
+                            "the #{builder} budget is #{budget} minutes, below the slowest #{builder} " \
+                            "build actually observed (#{slowest}) - it would cancel good builds, which " \
+                            'is how 2.4.0, 2.4.1 and 2.4.2 were lost.'
+          expect(budget).to be <= slowest * 3,
+                            "the #{builder} budget is #{budget} minutes against a #{slowest}-minute " \
+                            'worst case. Padding past 3x means a wedged build burns the runner instead ' \
+                            'of reporting quickly.'
+        end
       end
+    end
+
+    # This is the actionable core of the 2.4.x outage. The driver changed to
+    # emulated and the budget stayed sized for Build Cloud: 20 minutes, then
+    # 45, against a build that needs ~63. Assert the budget that applies to
+    # the DEFAULT path, because that is the one every release gets.
+    it 'sizes the default path budget for the default path' do
+      budget = publish_budgets[default_builder]
+
+      aggregate_failures do
+        expect(budget).to be > failed_budgets.max,
+                          "the #{default_builder} driver is budgeted #{budget} minutes, but " \
+                          "#{failed_budgets.max} already timed out on that very path. A budget sized for " \
+                          'a driver other than the default is what cancelled 2.4.0, 2.4.1 and 2.4.2.'
+        expect(budget).to be >= slowest_measured_minutes[default_builder],
+                          "the #{default_builder} budget is #{budget} minutes, below the slowest such " \
+                          "build actually observed (#{slowest_measured_minutes[default_builder]})"
+      end
+    end
+
+    it 'derives the budget from the driver instead of taking it from callers' do
+      inputs = workflow_on('docker-publish.yml')['workflow_call']['inputs']
+
+      expect(inputs).not_to have_key('timeout_minutes'),
+                            'the budget must be derived from the driver inside docker-publish.yml, not ' \
+                            'passed in. Two independent inputs can disagree, and a caller pairing the ' \
+                            'emulated driver with a 25-minute budget is the 2.4.x bug rebuilt.'
+      expect(workflow_yaml('docker-publish.yml')['jobs']['publish']['timeout-minutes'].to_s)
+        .to include('inputs.builder'),
+            'the job budget must be a function of inputs.builder'
     end
 
     it 'gives every publish job a timeout' do

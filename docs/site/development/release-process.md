@@ -16,7 +16,7 @@ No workflow has a `push: tags:` trigger. `git push origin v2.5.0` fires zero wor
 
 ### What is automated
 
-- Building `linux/amd64` + `linux/arm64` images and pushing `mitre/vulcan:<x.y.z>` and `mitre/vulcan:release-latest`.
+- Building `linux/amd64` + `linux/arm64` images and pushing `mitre/vulcan:<x.y.z>` and `mitre/vulcan:release-latest`. This takes about an hour on the free default driver (see [The two build drivers](#the-two-build-drivers)).
 - Checking, before the build, that the tag is semver, that `VERSION` at the tagged commit equals the tag, that the commit is on `master`, and that `ci.yml` concluded success for that exact commit.
 - SBOM generation and submission to the GitHub dependency graph.
 - Opening the Iron Bank merge request on repo1 with both per-architecture digests.
@@ -35,7 +35,7 @@ No workflow has a `push: tags:` trigger. `git push origin v2.5.0` fires zero wor
 |------|---------|---------|
 | `ci.yml` | push to `master`, pull requests | Lint, security scans, frontend + backend test shards, SonarCloud. **Has no release trigger and does not build images.** |
 | `release.yml` | `release: published`, `workflow_dispatch` | Verifies the tag, then publishes the stable image and the Iron Bank merge request. |
-| `mainline.yml` | push to `master`, `workflow_dispatch` | Publishes the bleeding-edge image (`<git-sha>` + `latest`) and a merge request against the separate `vulcan-mainline` repo1 project. |
+| `mainline.yml` | push to `master`, `workflow_dispatch` | Publishes the bleeding-edge image (`<git-sha>` + `latest`) and a merge request against the separate `vulcan-mainline` repo1 project. Builds on the free emulated driver (~65 min), so routine master pushes never spend shared Build Cloud minutes; superseded pushes are cancelled. |
 | `docker-publish.yml` | `workflow_call` only | The shared build-and-push implementation that `release.yml` and `mainline.yml` both call. Not runnable on its own. |
 | `docs.yml` | push to `master` touching `docs/`, pull requests, `workflow_dispatch` | Builds and deploys the VitePress site to GitHub Pages. |
 | `dependabot.yml` | `pull_request_target` | Auto-approves and merges Dependabot pull requests. |
@@ -55,8 +55,39 @@ No workflow has a `push: tags:` trigger. `git push origin v2.5.0` fires zero wor
 | `secrets.SAF_IRONBANK_REPO1_PAT` | repo1 merge request |
 | `secrets.SAF_IRONBANK_REPO1_USERNAME` | repo1 merge request |
 | `vars.DOCKER_BUILD_CLOUD_ENDPOINT` | Optional. Overrides the Docker Build Cloud builder endpoint; defaults to `mitre/mitre-builder`. |
+| `vars.RELEASE_BUILDER` | Optional, **repository** variable. Set to `cloud` to make the next release build on Docker Build Cloud. Leave unset for the free default. |
 
-**Docker Build Cloud.** The image compiles Ruby and jemalloc from source for two architectures. On a GitHub-hosted runner with QEMU emulation that takes longer than any reasonable job budget; it is the reason the 2.4.0, 2.4.1 and 2.4.2 publishes were all cancelled on timeout and why no `2.4.0` or `2.4.2` image exists on DockerHub. The publish therefore builds on Docker Build Cloud unconditionally, which takes **2-4 minutes**. If the MITRE Build Cloud subscription lapses, the buildx setup step fails within a minute — see [Troubleshooting](#build-cloud-is-unavailable).
+### The two build drivers
+
+The image compiles Ruby, jemalloc and YJIT from source for `linux/amd64` and `linux/arm64`. There are two ways to build it.
+
+| Driver | How long | Cost | When |
+|--------|----------|------|------|
+| `emulated` | **~65 min** (last five mainline builds: 62m13s, 62m35s, 63m15s, 63m43s, 64m10s) | **Free.** GitHub-hosted standard runners cost nothing for public repositories. | **The default, everywhere** — releases and every push to `master`. |
+| `cloud` | **2-10 min** (2m35s measured; slowest on record 10m26s) | **Spends Docker Build Cloud minutes from a single small monthly pot shared by the entire MITRE organization.** Vulcan is one team of several drawing on it. | **Opt-in**, when a release needs to be fast. |
+
+So a normal release takes about an hour and costs nothing. That is the deliberate trade: the shared minute pot is small, and a release that is slow but free and reliable beats one that is fast and competes with other teams for a scarce resource.
+
+::: tip Emulation is slow, not broken
+This is worth stating plainly because the 2.4.x failures made it look otherwise. Emulated multi-arch builds of this image succeed consistently — five consecutive `mainline.yml` runs completed in 62–64 minutes and each pushed a working two-architecture image. The 2.4.0, 2.4.1 and 2.4.2 releases were cancelled because the emulated path ran under a budget sized for Build Cloud (20 minutes, later 45) rather than for itself. The budget is now derived from the driver, so that mismatch cannot be expressed.
+:::
+
+#### Asking for Build Cloud on a release
+
+The fast driver is reachable two ways, and the publish job prints which driver it used and writes it to the run summary, so the path taken is always visible.
+
+**Before publishing a release** (works on the normal `release: published` trigger):
+
+1. Settings → Secrets and variables → Actions → Variables
+2. Set the repository variable **`RELEASE_BUILDER`** to `cloud`
+3. Publish the release as usual
+4. **Unset it afterwards**, or every subsequent release will quietly spend shared minutes
+
+**When re-publishing a tag** (`workflow_dispatch`): set the **builder** input to `cloud` on the Run workflow form. No variable needed.
+
+::: warning The first emulated release is a measurement
+No `release: published` run has ever completed an emulated build, because none was ever given enough time. The budget is **120 minutes**, set from mainline's 62–64 minute builds plus headroom for the SBOM and repo1 steps. Record the actual publish-job duration of the first emulated release and tighten the budget in `docker-publish.yml` to roughly 1.5× it. GitHub's hard job ceiling is 6 hours, so erring high costs nothing but a slower failure signal.
+:::
 
 ## Semver guidance
 
@@ -181,9 +212,9 @@ The bump commit must be on `master` before you publish. `release.yml` compares `
 `release.yml` runs two jobs:
 
 - **Verify the tag is releasable** (seconds) — semver tag, `VERSION` matches the tag, commit is an ancestor of `master`, `ci.yml` succeeded for that commit.
-- **publish** (2-4 minutes) — Build Cloud multi-arch build and push, SBOM submission, per-architecture digest resolution, Iron Bank merge request.
+- **publish** — multi-arch build and push, SBOM submission, per-architecture digest resolution, Iron Bank merge request. The job prints the driver it used and writes it to the run summary.
 
-Expect the whole run to finish in **under 10 minutes**. If it is still running at 25 minutes it will be cancelled by the job timeout; see [Troubleshooting](#troubleshooting).
+Expect **about 65 minutes** on the default `emulated` driver, with a 120-minute budget. If you opted into `cloud`, expect 2–10 minutes against a 25-minute budget. A `cancelled` conclusion means the budget was exceeded — see [Troubleshooting](#troubleshooting).
 
 ## Verifying the release worked
 
@@ -232,9 +263,19 @@ The git tag is `v2.5.0`; the image tag is `2.5.0`. `release.yml` strips the pref
 :::
 
 - **Registry**: [hub.docker.com/r/mitre/vulcan](https://hub.docker.com/r/mitre/vulcan)
-- **Architectures**: `linux/amd64` and `linux/arm64`, each built on a native Build Cloud machine
+- **Architectures**: `linux/amd64` and `linux/arm64` — built under QEMU on the runner by default, or on native Build Cloud machines when opted in. Both produce the same two-architecture manifest list, and the publish fails if either architecture is missing from the registry afterwards.
 - **Base**: Red Hat UBI 9 Minimal, with Ruby and jemalloc compiled from source and YJIT enabled. The exact Ruby and Node versions come from `.ruby-version` and `.nvmrc` via `docker-bake.hcl`; `spec/config/toolchain_version_consistency_spec.rb` keeps them aligned.
 - **Iron Bank** currently pulls the amd64 image only, even though both architectures are published and both digests are recorded in the manifest.
+
+::: tip Open question: how often should `master` be built?
+`mainline.yml` builds a full two-architecture image on **every** push to `master`, which is about an hour of runner time each (free, but not nothing — it occupies an organization concurrency slot, and superseded pushes are cancelled rather than queued). For a bleeding-edge tag that is arguably more than it needs.
+
+The recommended change is to move `mainline.yml` from `push:` to a **daily `schedule:`** plus its existing manual dispatch. That cuts the cost by roughly 90% and keeps both the multi-architecture `latest` image and the repo1 mainline feed exactly as they are. The cost is that `mitre/vulcan:<git-sha>` images would exist only for the commits that happen to be `HEAD` when the schedule fires, rather than for every commit.
+
+Two alternatives were considered and are **not** recommended: building `master` as amd64-only would drop `latest` to a single architecture (breaking it for Apple Silicon developers) and would break the repo1 mainline hardening manifest, which requires both per-architecture digests. Native per-architecture runners (`ubuntu-24.04-arm` plus a manifest merge) would remove the emulation cost entirely and are free for public repositories, but are unvalidated here and no longer urgent now that the emulated path is correctly budgeted.
+
+This changes a published artifact contract, so it is left as a deliberate maintainer decision rather than folded into a release fix.
+:::
 
 ## Troubleshooting
 
@@ -260,11 +301,15 @@ The GitHub Release and its tag already exist, so do **not** cut a new version. R
 
 The verify job runs again, so this is safe: it cannot publish something the `release: published` path would have refused.
 
-### Build Cloud is unavailable
+### The release is taking an hour
 
-If the "Set up Docker Buildx (Docker Build Cloud)" step fails, the builder endpoint or the organization's Build Cloud subscription is the problem. Check `vars.DOCKER_BUILD_CLOUD_ENDPOINT` (or the `mitre/mitre-builder` default) and the subscription status before anything else.
+That is normal on the free default driver. See [The two build drivers](#the-two-build-drivers). If you need it faster, cancel the run, set `vars.RELEASE_BUILDER` to `cloud`, and re-dispatch the workflow against the tag.
 
-There is deliberately **no emulated fallback**. A silently-selected QEMU path is what broke three consecutive releases: it cannot finish inside a sane budget, so it consumed the whole job timeout and then cancelled. If Build Cloud is genuinely gone and a release must ship, that is a decision to make explicitly — an emulated multi-arch build of this image is roughly a 45-90 minute job and needs `timeout_minutes` raised to match, which is a reviewed change to `docker-publish.yml`, not something to improvise during a release.
+### Build Cloud is unavailable or out of minutes
+
+Only relevant if you opted in. If the "Set up Docker Buildx (Docker Build Cloud)" step fails, it is the endpoint, the organization's subscription, or an exhausted monthly pot. The step fails within a minute rather than degrading to something slower — deliberately, because this job is then budgeted at 25 minutes and an emulated build needs about 65. A slow driver running under a fast driver's budget is exactly how 2.4.0, 2.4.1 and 2.4.2 were lost.
+
+**Fix:** unset `vars.RELEASE_BUILDER` (or set the dispatch **builder** input to `emulated`) and re-run. The default free path applies, with its own 120-minute budget. Do not raise a timeout by hand — the budget follows the driver.
 
 ### The image tag is missing from DockerHub but the run is green
 

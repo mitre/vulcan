@@ -17,6 +17,14 @@ on:
         description: 'Release tag to (re-)publish, e.g. v2.5.0. Defaults to the ref the workflow was dispatched from.'
         required: false
         type: string
+      builder:
+        description: 'Build driver. emulated is free and takes ~65 min; cloud takes 2-10 min but spends the org shared Build Cloud minutes.'
+        required: false
+        default: emulated
+        type: choice
+        options:
+          - emulated
+          - cloud
 
 # Two publishes of the same tag must not race each other for `release-latest`.
 # Serialise per tag, and never cancel a publish in flight — a half-pushed
@@ -139,6 +147,24 @@ jobs:
       ref: ${{ needs.verify.outputs.sha }}
       tag_suffixes: "${{ needs.verify.outputs.version }},release-latest"
       version: ${{ needs.verify.outputs.version }}
+      # Driver selection, in precedence order, and every term here is
+      # readable on the `release: published` trigger except the first:
+      #
+      #   1. inputs.builder   set only when a human re-dispatches the workflow
+      #   2. vars.RELEASE_BUILDER
+      #                       a repository variable. This is how an operator
+      #                       asks for Build Cloud on a *real* release: set it
+      #                       to `cloud` before clicking Publish, and unset it
+      #                       afterwards. Without it there is no way to request
+      #                       the fast driver on the release trigger, which is
+      #                       why 2.4.1 could only be rescued by cancelling and
+      #                       re-dispatching by hand.
+      #   3. 'emulated'       the free default.
+      #
+      # The resolved value is printed and written to the run summary by the
+      # publish job, so the path taken is never invisible - which was the
+      # original defect, and would be just as bad with the polarity reversed.
+      builder: ${{ inputs.builder || vars.RELEASE_BUILDER || 'emulated' }}
       ironbank_project_id: 17073
       ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
       ironbank_commit_author_name: "Automated Vulcan Release"

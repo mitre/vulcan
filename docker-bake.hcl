@@ -110,21 +110,26 @@ target "production-multiarch" {
 //
 // NOTE: no cache-from / cache-to here, on purpose.
 //
-// Both callers build on Docker Build Cloud (see
-// .github/workflows/docker-publish.yml), which maintains its own persistent
-// per-architecture layer cache across runs. A cold Build Cloud build of this
-// target measured 2m35s, so there is no build time left for a GitHub Actions
-// cache to recover.
+// On Docker Build Cloud (the release default) the builder keeps its own
+// persistent per-architecture layer cache, and a cold build of this target
+// measured 2m35s, so there is no build time left for a GitHub Actions cache to
+// recover. On the emulated driver (the mainline default) a `type=gha` cache
+// genuinely would help - those builds run 62-64 minutes - but it is still the
+// wrong trade here:
 //
-// `type=gha` would actively cost us. A mode=max export of a two-architecture
-// UBI9 image that compiles Ruby and jemalloc from source runs to several GB,
-// and `gh api repos/mitre/vulcan/actions/cache/usage` reports 9.57 GB already
-// live across 84 caches against GitHub's 10 GB per-repository ceiling. Writing
-// image layers there would evict ci.yml's gem and Yarn caches by LRU on every
-// release and every push to master, trading a saving we do not need for slower
-// CI on every pull request. `cache-from` without a writer is a no-op, so it is
-// not configured either. The `ci` target below keeps `type=gha` because it is
-// single-architecture and small.
+//   `gh api repos/mitre/vulcan/actions/cache/usage` reports 9.57 GB live
+//   across 84 caches against GitHub's 10 GB per-repository ceiling. A
+//   mode=max export of a two-architecture UBI9 image that compiles Ruby and
+//   jemalloc from source runs to several GB, so writing image layers there
+//   would evict ci.yml's gem and Yarn caches by LRU on *every* push to master
+//   - buying mainline latency we do not need at the price of slower CI on
+//   every pull request.
+//
+// `cache-from` without a writer is a no-op, so it is not configured either.
+// The `ci` target below keeps `type=gha` because it is single-architecture and
+// small. Revisit this if ci.yml's cache footprint shrinks enough to leave
+// room, or if mainline moves to native per-architecture runners (which would
+// cut the build without needing a cache at all).
 
 target "registry" {
   inherits = ["production-multiarch"]

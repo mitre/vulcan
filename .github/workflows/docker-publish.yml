@@ -60,23 +60,43 @@ on:
           version.
         required: true
         type: string
-      timeout_minutes:
+      builder:
         description: >-
-          Wall-clock budget for the publish job. Grounded in measurement, not
-          padding: on Build Cloud the whole job has measured 2m57s (mainline
-          dispatch 33343714810) to 4m02s (release dispatch 33083040270), and
-          the slowest Build Cloud release on record is 10m26s (v2.3.6). 25
-          minutes is ~2.5x that worst case, which absorbs a cold cloud cache,
-          a slow SBOM submission and a slow repo1 clone while still failing
-          fast if the build is wedged.
+          Which buildx driver to build on. Both produce the same
+          two-architecture manifest list; they trade money for time.
+
+            emulated  (DEFAULT) QEMU on the GitHub-hosted runner. Free -
+                      standard runners cost nothing for public repositories -
+                      and measured: the last five mainline builds of this
+                      exact target took 62m13s, 62m35s, 63m15s, 63m43s and
+                      64m10s, and every one pushed a working amd64+arm64
+                      image. Emulation is slow, not broken.
+
+            cloud     Docker Build Cloud. Each architecture builds on a native
+                      machine: 2m35s-10m26s measured. Opt-in only, because the
+                      minutes come from one small monthly pot shared by the
+                      WHOLE MITRE organisation and Vulcan is one team of
+                      several. Ask for it when a release needs to be fast.
+
+          This is a workflow_call input with a declared default, which is
+          populated on every trigger. It is deliberately not read from the
+          event payload's dispatch fields: those are empty on the
+          `release: published` and `push:` triggers, so a driver chosen from
+          them is unaskable on a real release and silently resolves to the
+          other branch.
         required: false
-        default: 25
-        type: number
+        default: emulated
+        type: string
 
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    # Derived from the builder, never supplied by the caller, so the budget
+    # cannot disagree with the path. "Slow driver selected, fast driver's
+    # budget applied" is precisely how 2.4.0, 2.4.1 and 2.4.2 were cancelled.
+    #   cloud     25 = ~2.5x the slowest cloud release on record (10m26s, v2.3.6)
+    #   emulated 120 = ~1.9x the slowest observed emulated build (64m10s)
+    timeout-minutes: ${{ inputs.builder == 'cloud' && 25 || 120 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,31 +108,68 @@ jobs:
           username: ${{ vars.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      # Docker Build Cloud, unconditionally. This is not a preference, it is
-      # the only driver that has ever completed a multi-arch Vulcan build:
+      # Validate and announce the driver before anything depends on it. The
+      # original defect was invisible: the workflow quietly took a path nobody
+      # had chosen, under a budget sized for the path it did not take. A
+      # typo'd builder must fail here, and the choice must appear in the run.
+      - name: Resolve the build driver
+        shell: bash
+        env:
+          BUILDER: ${{ inputs.builder }}
+        run: |
+          set -euo pipefail
+          case "$BUILDER" in
+            emulated)
+              summary="QEMU emulation on the runner (free; budget 120 min, expect ~65)"
+              ;;
+            cloud)
+              summary="Docker Build Cloud (budget 25 min, expect 2-10; SPENDS the organisation's shared monthly minutes)"
+              ;;
+            *)
+              echo "::error::Unknown builder '$BUILDER'. Expected 'emulated' or 'cloud'."
+              exit 1
+              ;;
+          esac
+          echo "Build driver: $BUILDER - $summary"
+          {
+            echo "### Build driver: \`$BUILDER\`"
+            echo ""
+            echo "$summary"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Docker Build Cloud: opt-in, never the default. Each architecture builds
+      # on a native machine and the builder keeps its own persistent layer
+      # cache, so a cold build measures 2m35s (run 33083040270) against ~63
+      # minutes emulated. The minutes come from one small monthly pot shared
+      # across the whole organisation, so this path is requested deliberately -
+      # by a repository variable before publishing, or by re-dispatching.
       #
-      #   v2.4.1, run 33079448087, QEMU         build step cancelled at 19m33s
-      #   v2.4.1, run 33083040270, Build Cloud  build step done in     2m35s
-      #
-      # Same tag, same tree, 40 minutes apart, driver the only variable.
-      # Vulcan's image compiles Ruby and jemalloc from source, which costs
-      # roughly 4.5x under QEMU, and both platform legs share one 4-vCPU
-      # runner, so emulated multi-arch does not finish inside any sane budget.
-      # Build Cloud builds each platform on a native machine and brings its
-      # own persistent layer cache, which is why no cache-from/cache-to is
-      # configured on the bake `registry` target (see docker-bake.hcl).
-      #
-      # There is deliberately no emulated fallback. A fallback here is what
-      # broke releases in the first place: the driver was gated on
-      # `github.event.inputs`, which is empty on the `release: published` and
-      # `push:` triggers, so every real publish silently took the QEMU path
-      # and timed out. If Build Cloud is unavailable this step fails in under
-      # a minute with a clear error, which is the behaviour we want.
+      # If Build Cloud is unavailable or the pot is exhausted, this step fails
+      # in under a minute. It does not degrade to the emulated path, because
+      # this job is then budgeted at 25 minutes and an emulated build needs
+      # ~63: a slow driver running under a fast driver's budget is exactly how
+      # 2.4.0, 2.4.1 and 2.4.2 were cancelled. Re-run without the opt-in and
+      # the default emulated path applies, with its own 120-minute budget.
       - name: Set up Docker Buildx (Docker Build Cloud)
+        if: inputs.builder == 'cloud'
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
         with:
           driver: cloud
           endpoint: ${{ vars.DOCKER_BUILD_CLOUD_ENDPOINT || 'mitre/mitre-builder' }}
+
+      # The default path. Free for public repositories, and proven: five
+      # consecutive mainline builds of this target completed in 62m13s-64m10s
+      # and each pushed a working amd64+arm64 image. It is slow because the
+      # image compiles Ruby, jemalloc and YJIT from source and both platform
+      # legs share one 4-vCPU runner - a budgeting problem, not a correctness
+      # problem, and the budget above is sized for it.
+      - name: Set up QEMU (emulated multi-arch)
+        if: inputs.builder == 'emulated'
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx (local + QEMU emulation)
+        if: inputs.builder == 'emulated'
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
 
       - name: Build and push the multi-arch image
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
