@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The default session timeout is now 15 minutes (was 1 hour).** This is the DoD AC-12 standard for non-privileged users (V-222389), and it is only a safe default because of the inactivity fix below: the window now resets on every authenticated request, so 15 minutes of *idleness* ends a session but an hour of work does not. The 1-hour default existed because the reset was silently broken, which made any short window behave as a fixed deadline measured from sign-in. Set `VULCAN_SESSION_TIMEOUT` to restore the old behaviour (`1h` or `3600`), or to `10m` / `600` if V-222390's admin standard applies to your deployment — Devise has no per-scope timeout, so that value applies to every user.
+
+### Fixed
+
+- **Session timeout is now genuinely inactivity-based.** `activerecord-session_store` 2.3.0 added a dirty check that skips the database write when it believes the session is unchanged, but it cannot see in-place mutations of nested session values — and that is exactly how Devise's `:timeoutable` records activity. Every `last_request_at` update was computed and thrown away, so sessions expired a fixed `VULCAN_SESSION_TIMEOUT` after *sign-in* regardless of activity: an active user was logged out roughly an hour into their work. Vulcan now carries a corrected dirty check until the upstream fix ships ([rails/activerecord-session_store#236](https://github.com/rails/activerecord-session_store/issues/236)). This corrects the v2.4.2 note below, which claimed the session timer already reset on server requests; it did not, and had not since Vulcan moved to the server-side session store. Users with "remember me" active were unaffected, which is why the symptom looked intermittent.
+
 ## [v2.4.2] - 2026-08-29
 
 ### Added

@@ -622,7 +622,7 @@ This table provides direct links to the Vulcan source code that implements each 
 
 | Control Category | Feature | Implementation Location | Status |
 |-----------------|---------|------------------------|--------|
-| **Session Management** | Session Timeout | [`config/vulcan.default.yml:29`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L29)<br>[`config/initializers/devise.rb:161`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb#L161) | ✅ Implemented<br>⚠️ Note: Defaults to 60 min, set to 10 min for compliance |
+| **Session Management** | Session Timeout | [`config/vulcan.default.yml:29`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L29)<br>[`config/initializers/devise.rb:161`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb#L161) | ✅ Implemented<br>Defaults to 15 min (DoD AC-12, V-222389); set 10 min if V-222390 applies |
 | **System Banner** | Welcome Text | [`config/vulcan.default.yml:16`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L16)<br>[`app/views/devise/sessions/new.html.haml:13`](https://github.com/mitre/vulcan/blob/master/app/views/devise/sessions/new.html.haml#L13) | ✅ Implemented |
 | **Audit Logging** | User Auditing | [`app/models/user.rb:8`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb#L8) | ✅ Implemented |
 | **Audit Logging** | Component Auditing | [`app/models/component.rb:42`](https://github.com/mitre/vulcan/blob/master/app/models/component.rb#L42) | ✅ Implemented |
@@ -651,8 +651,8 @@ Based on source code analysis, the following clarifications apply:
 
 | Configuration | Documentation States | Actual Implementation | Action Required |
 |--------------|---------------------|----------------------|-----------------|
-| **Session Timeout** | 10 minutes required | Defaults to 1 hour | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` (or `600`) |
-| **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
+| **Session Timeout** | 15 minutes for non-privileged users (V-222389) | Defaults to 15 minutes (`900`) | ✅ No action needed |
+| **Admin Timeout** | 10 minutes for admin users (V-222390) | Uses the same timeout for every user | ⚠️ Devise has no per-scope timeout. A deployment that must meet V-222390 sets `VULCAN_SESSION_TIMEOUT=10m` (or `600`) for **everyone**. |
 | **CSRF Protection** | Enabled | `protect_from_forgery with: :exception` in `ApplicationController`; same-origin frontends without the Rails layout get the token from `GET /api/auth/csrf` | ✅ No action needed |
 | **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |
 | **Log Rotation** | External required | Logs to stdout | ⚠️ **Must configure** log management system |

@@ -25,7 +25,12 @@ gem 'haml-rails', '~> 3.1'
 gem 'devise', '~> 5.0'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
 gem 'devise-encryptable'
-# Session limiting (AC-10), session tracking, and server-side session store
+# Session limiting (AC-10), session tracking, and server-side session store.
+# 2.3.0 silently discards in-place mutations of nested session values, which
+# breaks Devise :timeoutable. Carried patch:
+# config/initializers/active_record_session_store_dirty_data.rb — delete it
+# (and its spec) once a release containing
+# https://github.com/rails/activerecord-session_store/issues/236 lands.
 gem 'activerecord-session_store'
 gem 'devise-security', github: 'mitre/devise-security', ref: '54a79d0'
 # Use Omniauth to support additional login providers
