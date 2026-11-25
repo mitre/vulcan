@@ -110,12 +110,9 @@ target "production-multiarch" {
 //
 // NOTE: no cache-from / cache-to here, on purpose.
 //
-// On Docker Build Cloud (the release default) the builder keeps its own
-// persistent per-architecture layer cache, and a cold build of this target
-// measured 2m35s, so there is no build time left for a GitHub Actions cache to
-// recover. On the emulated driver (the mainline default) a `type=gha` cache
-// genuinely would help - those builds run 62-64 minutes - but it is still the
-// wrong trade here:
+// The emulated driver is the default everywhere, and those builds run 62-64
+// minutes, so a `type=gha` cache genuinely would help. It is still the wrong
+// trade here:
 //
 //   `gh api repos/mitre/vulcan/actions/cache/usage` reports 9.57 GB live
 //   across 84 caches against GitHub's 10 GB per-repository ceiling. A
@@ -125,10 +122,14 @@ target "production-multiarch" {
 //   - buying mainline latency we do not need at the price of slower CI on
 //   every pull request.
 //
+// On the opt-in Build Cloud driver the question does not arise: that builder
+// keeps its own persistent per-architecture cache and a cold build of this
+// target measured 2m35s, leaving no build time for a cache to recover.
+//
 // `cache-from` without a writer is a no-op, so it is not configured either.
 // The `ci` target below keeps `type=gha` because it is single-architecture and
 // small. Revisit this if ci.yml's cache footprint shrinks enough to leave
-// room, or if mainline moves to native per-architecture runners (which would
+// room, or if the build moves to native per-architecture runners (which would
 // cut the build without needing a cache at all).
 
 target "registry" {

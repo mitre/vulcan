@@ -4,49 +4,44 @@ name: Release
 # mitre/vulcan:release-latest, plus the Iron Bank merge request on repo1.
 #
 # Trigger: publishing a GitHub Release in the UI (see
-# docs/site/development/release-process.md). workflow_dispatch exists to
-# re-run the publish for a tag that was already released, which is the
-# recovery path when the publish itself failed.
+# docs/site/development/release-process.md). There is deliberately no
+# workflow_dispatch path. If a publish fails, re-run the failed run from the
+# Actions UI: GitHub replays the original `release` payload, so the tag is
+# still resolved the same way, and `vars.RELEASE_BUILDER` is read at run time
+# so the driver can be changed before re-running. A dispatch input would add a
+# second way to name the tag and a second way to pick the driver, both of
+# which can disagree with the release being published.
 
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to (re-)publish, e.g. v2.5.0. Defaults to the ref the workflow was dispatched from.'
-        required: false
-        type: string
-      builder:
-        description: 'Build driver. emulated is free and takes ~65 min; cloud takes 2-10 min but spends the org shared Build Cloud minutes.'
-        required: false
-        default: emulated
-        type: choice
-        options:
-          - emulated
-          - cloud
 
 # Two publishes of the same tag must not race each other for `release-latest`.
 # Serialise per tag, and never cancel a publish in flight — a half-pushed
 # manifest list is worse than a slow one.
 concurrency:
-  group: release-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+  group: release-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
-  # Gate the publish on the three things that can make a release ship the
-  # wrong bits. Deliberately a *gate*, not a re-run of the suite: ci.yml
-  # already tested this exact tree on the version-bump commit, so re-running
-  # it would add ~15 minutes to every release to re-prove the same result.
-  # This job proves instead that the tag really points at that tested,
-  # on-master, correctly-bumped commit, and costs seconds.
+  # Two checks the `release: published` trigger cannot express by itself.
+  #
+  # Branch protection already guarantees the code is good: `ci-gate` is a
+  # required check and `strict` is on, so a PR must be rebased onto current
+  # master AND green to merge. This job therefore does NOT re-check CI -- that
+  # would re-prove branch protection's work, and when an admin deliberately
+  # merges something red it would second-guess a decision made on purpose.
+  #
+  # What protection cannot cover is the tag: the Releases UI lets a human
+  # target any branch or commit, so "this release is cut from master" and
+  # "the version bump landed before the tag" are properties of the publish,
+  # not of the merge. Those are checked here, and cost seconds.
   verify:
     name: Verify the tag is releasable
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read   # read ci.yml's conclusion for the tagged commit
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
       version: ${{ steps.resolve.outputs.version }}
@@ -59,7 +54,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RAW_TAG: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
+          RAW_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
           if [[ -z "$RAW_TAG" ]]; then
@@ -112,29 +107,6 @@ jobs:
           fi
           echo "$SHA is on master"
 
-      # Nothing else in the pipeline checks this. Without it, publishing a
-      # release off a red commit ships an untested image to DockerHub and to
-      # Iron Bank, which is exactly the hole the old docs claimed was closed.
-      - name: CI must have passed for the tagged commit
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ steps.resolve.outputs.sha }}
-        run: |
-          set -euo pipefail
-          conclusions="$(gh api \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}&event=push&status=completed" \
-            --jq '[.workflow_runs[].conclusion] | unique | join(" ")')"
-          if [[ -z "$conclusions" ]]; then
-            echo "::error::No completed push-event CI run found for $SHA. Let CI finish on master before publishing the release."
-            exit 1
-          fi
-          if [[ " $conclusions " != *" success "* ]]; then
-            echo "::error::CI for $SHA concluded '$conclusions', not success. Fix master and re-run CI before publishing."
-            exit 1
-          fi
-          echo "CI for $SHA concluded: $conclusions"
-
   publish:
     needs: verify
     permissions:
@@ -142,29 +114,23 @@ jobs:
       packages: write
     uses: ./.github/workflows/docker-publish.yml
     with:
-      # The verified commit, not github.ref: a workflow_dispatch re-publish
-      # from the default branch must still build the tag's tree.
+      # The verified commit, not github.ref: github.ref on a release event is
+      # the tag, but resolving it once in `verify` keeps the built tree and the
+      # checked tree provably the same commit.
       ref: ${{ needs.verify.outputs.sha }}
       tag_suffixes: "${{ needs.verify.outputs.version }},release-latest"
       version: ${{ needs.verify.outputs.version }}
-      # Driver selection, in precedence order, and every term here is
-      # readable on the `release: published` trigger except the first:
-      #
-      #   1. inputs.builder   set only when a human re-dispatches the workflow
-      #   2. vars.RELEASE_BUILDER
-      #                       a repository variable. This is how an operator
-      #                       asks for Build Cloud on a *real* release: set it
-      #                       to `cloud` before clicking Publish, and unset it
-      #                       afterwards. Without it there is no way to request
-      #                       the fast driver on the release trigger, which is
-      #                       why 2.4.1 could only be rescued by cancelling and
-      #                       re-dispatching by hand.
-      #   3. 'emulated'       the free default.
+      # `vars.RELEASE_BUILDER` is a repository variable, which is readable on
+      # the `release: published` trigger. It is the only way to ask for the
+      # fast driver on a real release: set it to `cloud` before clicking
+      # Publish, and unset it afterwards. 2.4.1 could only be rescued by hand
+      # because the old opt-in read `github.event.inputs`, which is empty here.
+      # Unset means the free emulated driver.
       #
       # The resolved value is printed and written to the run summary by the
       # publish job, so the path taken is never invisible - which was the
       # original defect, and would be just as bad with the polarity reversed.
-      builder: ${{ inputs.builder || vars.RELEASE_BUILDER || 'emulated' }}
+      builder: ${{ vars.RELEASE_BUILDER || 'emulated' }}
       ironbank_project_id: 17073
       ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
       ironbank_commit_author_name: "Automated Vulcan Release"

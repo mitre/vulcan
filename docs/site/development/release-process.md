@@ -34,7 +34,7 @@ No workflow has a `push: tags:` trigger. `git push origin v2.5.0` fires zero wor
 | File | Trigger | Purpose |
 |------|---------|---------|
 | `ci.yml` | push to `master`, pull requests | Lint, security scans, frontend + backend test shards, SonarCloud. **Has no release trigger and does not build images.** |
-| `release.yml` | `release: published`, `workflow_dispatch` | Verifies the tag, then publishes the stable image and the Iron Bank merge request. |
+| `release.yml` | `release: published` only | Verifies the tag, then publishes the stable image and the Iron Bank merge request. |
 | `mainline.yml` | push to `master`, `workflow_dispatch` | Publishes the bleeding-edge image (`<git-sha>` + `latest`) and a merge request against the separate `vulcan-mainline` repo1 project. Builds on the free emulated driver (~65 min), so routine master pushes never spend shared Build Cloud minutes; superseded pushes are cancelled. |
 | `docker-publish.yml` | `workflow_call` only | The shared build-and-push implementation that `release.yml` and `mainline.yml` both call. Not runnable on its own. |
 | `docs.yml` | push to `master` touching `docs/`, pull requests, `workflow_dispatch` | Builds and deploys the VitePress site to GitHub Pages. |
@@ -74,16 +74,14 @@ This is worth stating plainly because the 2.4.x failures made it look otherwise.
 
 #### Asking for Build Cloud on a release
 
-The fast driver is reachable two ways, and the publish job prints which driver it used and writes it to the run summary, so the path taken is always visible.
-
-**Before publishing a release** (works on the normal `release: published` trigger):
+Set a repository variable before you publish. The publish job prints which driver it used and writes it to the run summary, so the path taken is always visible.
 
 1. Settings → Secrets and variables → Actions → Variables
 2. Set the repository variable **`RELEASE_BUILDER`** to `cloud`
 3. Publish the release as usual
 4. **Unset it afterwards**, or every subsequent release will quietly spend shared minutes
 
-**When re-publishing a tag** (`workflow_dispatch`): set the **builder** input to `cloud` on the Run workflow form. No variable needed.
+The variable is read when the job starts, so it also applies to a re-run of a failed publish — set it, then re-run.
 
 ::: warning The first emulated release is a measurement
 No `release: published` run has ever completed an emulated build, because none was ever given enough time. The budget is **120 minutes**, set from mainline's 62–64 minute builds plus headroom for the SBOM and repo1 steps. Record the actual publish-job duration of the first emulated release and tighten the budget in `docker-publish.yml` to roughly 1.5× it. GitHub's hard job ceiling is 6 hours, so erring high costs nothing but a slower failure signal.
@@ -140,7 +138,7 @@ Verify before pushing:
 
 ```bash
 bundle exec rspec spec/config/docs_version_consistency_spec.rb \
-                  spec/config/release_infrastructure_spec.rb
+                  spec/config/version_spec.rb
 ```
 
 ### 5. Write the changelog entry
@@ -157,7 +155,7 @@ bundle exec rspec spec/config/docs_version_consistency_spec.rb \
 - **Short bold summary.** Then the detail a self-hoster needs.
 ```
 
-`spec/config/release_infrastructure_spec.rb` asserts a `## [v<version>]` section exists for the current version, so an unwritten changelog fails CI.
+Nothing enforces this, so it is on you: an unwritten changelog will not fail CI.
 
 ::: tip `[Unreleased]` is often already populated
 Fix and feature branches add their own bullets under `## [Unreleased]` as they merge, so do not expect it to be empty. Your job at release time is to **rename that heading** to `## [v2.5.0] - <date>`, review and edit the entries already there, add anything missing, and open a fresh empty `## [Unreleased]` above it. Do not delete entries other people wrote.
@@ -188,7 +186,7 @@ git commit -s -m "chore: bump version to v2.5.0"
 git push origin release/v2.5.0
 ```
 
-Open a PR to `master`, get it reviewed, and merge it. **Wait for `ci.yml` to finish green on the resulting `master` commit.** This is not optional politeness: `release.yml` queries that run's conclusion and refuses to publish without it.
+Open a PR to `master`, get it reviewed, and merge it. Branch protection does the work here: `ci-gate` is a required check and `strict` is enabled, so the PR must be rebased onto current `master` and green before it can merge. `release.yml` does not re-check CI — it trusts branch protection rather than re-proving it.
 
 ### 7. Publish the GitHub Release
 
@@ -290,28 +288,27 @@ The error annotation names the problem:
 | `… is not a vMAJOR.MINOR.PATCH release tag` | Delete the release and the tag; re-publish with a `vX.Y.Z` tag. |
 | `VERSION at v2.5.0 reads '…'` | The tag points at the wrong commit. Land the bump commit on `master` first, delete the tag, and re-publish against it. |
 | `… is not on master` | The release target was a branch or fork commit. Re-publish targeting `master`. |
-| `No completed push-event CI run found for …` | `ci.yml` has not finished for that commit. Wait for it, then re-run `release.yml` (below). |
-| `CI for … concluded 'failure'` | Fix `master`, re-run `ci.yml` to green on that same commit, then re-run `release.yml`. Do not bypass this. |
+
 
 ### The publish failed or was cancelled — re-run it
 
-The GitHub Release and its tag already exist, so do **not** cut a new version. Re-dispatch the workflow against the existing tag:
+The GitHub Release and its tag already exist, so do **not** cut a new version and do not delete and re-publish the release.
 
-1. [Actions → Release](https://github.com/mitre/vulcan/actions/workflows/release.yml) → **Run workflow**
-2. Set **Use workflow from** to the tag (`v2.5.0`), or leave the default branch and enter `v2.5.0` in the **tag** input
-3. **Run workflow**
+Open the failed run and use **Re-run failed jobs** (or **Re-run all jobs**). GitHub replays the original `release` event, so the tag resolves exactly as it did the first time and the verify job runs again — there is no second way to name the tag, and therefore no way for a re-run to publish something the first attempt would have refused.
 
-The verify job runs again, so this is safe: it cannot publish something the `release: published` path would have refused.
+There is deliberately no `workflow_dispatch` on this workflow. A dispatch form would mean a second source for the tag and a second source for the driver, either of which could disagree with the release actually being published.
+
+If the run is old enough that GitHub no longer offers a re-run, publish a new patch release rather than trying to recreate the event.
 
 ### The release is taking an hour
 
-That is normal on the free default driver. See [The two build drivers](#the-two-build-drivers). If you need it faster, cancel the run, set `vars.RELEASE_BUILDER` to `cloud`, and re-dispatch the workflow against the tag.
+That is normal on the free default driver — emulated builds of this image run 62–64 minutes. See [The two build drivers](#the-two-build-drivers). If you need it faster, cancel the run, set `vars.RELEASE_BUILDER` to `cloud`, and re-run the cancelled run.
 
 ### Build Cloud is unavailable or out of minutes
 
 Only relevant if you opted in. If the "Set up Docker Buildx (Docker Build Cloud)" step fails, it is the endpoint, the organization's subscription, or an exhausted monthly pot. The step fails within a minute rather than degrading to something slower — deliberately, because this job is then budgeted at 25 minutes and an emulated build needs about 65. A slow driver running under a fast driver's budget is exactly how 2.4.0, 2.4.1 and 2.4.2 were lost.
 
-**Fix:** unset `vars.RELEASE_BUILDER` (or set the dispatch **builder** input to `emulated`) and re-run. The default free path applies, with its own 120-minute budget. Do not raise a timeout by hand — the budget follows the driver.
+**Fix:** unset `vars.RELEASE_BUILDER` and re-run. The free path applies, with its own 120-minute budget. Do not raise a timeout by hand — the budget follows the driver.
 
 ### The image tag is missing from DockerHub but the run is green
 
@@ -350,9 +347,9 @@ Open the PR, merge to `master`, wait for green CI, then publish the release as i
 | File | How it is updated | Enforced by |
 |------|-------------------|-------------|
 | `VERSION` | **You edit it.** Single source of truth, `v`-prefixed. | — |
-| `package.json` | `bundle exec rake version:sync` | `release_infrastructure_spec.rb` |
-| `lib/vulcan/version.rb` | Reads `VERSION` at load, strips the `v`. No edit needed. | `release_infrastructure_spec.rb` |
-| `CHANGELOG.md` | **You write it.** | `release_infrastructure_spec.rb` |
+| `package.json` | `bundle exec rake version:sync` | `version_spec.rb` |
+| `lib/vulcan/version.rb` | Reads `VERSION` at load, strips the `v`. No edit needed. | `version_spec.rb` |
+| `CHANGELOG.md` | **You write it.** | Not enforced — check it yourself |
 | `docs/site/index.md` | **You edit it.** | `docs_version_consistency_spec.rb` |
 | `docs/site/release-notes/index.md` | **You edit it.** | `docs_version_consistency_spec.rb` |
 | `docs/.vitepress/config.mjs` | **You edit it.** | `docs_version_consistency_spec.rb` |
