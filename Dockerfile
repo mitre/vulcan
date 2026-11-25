@@ -42,7 +42,7 @@ ARG YARNPKG_SHA256=a28ad591febb769f939c11f82f89bacad0b0fac0c884d3b78fa2aaaee9709
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:bba2b4bbf0ed15cfe7dd72a1e17ae7d2015a141f306b304e1a2785c41400e39c AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.9@sha256:08d4c70f1baf6537a0728656cf7942d561e74a35916509d205b6519861266352 AS base
 
 USER 0
 
