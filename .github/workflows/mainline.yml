@@ -1,10 +1,8 @@
 name: Mainline
 
-# Tracks every push to the default branch: builds and pushes a bleeding-edge
-# multi-arch image tagged mitre/vulcan:<git-sha> and :latest, then opens an Iron
-# Bank merge request against the vulcan-mainline repo1 project. Mirrors
-# release.yml, which publishes the stable mitre/vulcan:<version> +
-# :release-latest. Both share .github/workflows/docker-publish.yml.
+# Bleeding-edge counterpart to release.yml: pushes mitre/vulcan:<git-sha> and
+# :latest, and opens an Iron Bank merge request against the vulcan-mainline
+# repo1 project. Both share .github/workflows/docker-publish.yml.
 
 on:
   push:
@@ -40,20 +38,9 @@ jobs:
     with:
       ref: ${{ github.sha }}
       tag_suffixes: "${{ github.sha }},latest"
-      # The free emulated driver, always, on the automatic trigger. Mainline
-      # runs on every push to master, so it must never draw on the
-      # organisation's shared Build Cloud pot. It is proven here: the last five
-      # mainline builds took 62-64 minutes and each pushed a working
-      # amd64+arm64 image. The concurrency group above cancels superseded
-      # pushes so hour-long builds do not queue up behind each other. A human
-      # can still dispatch with builder=cloud when a mainline image is needed
-      # in a hurry.
-      #
-      # Building every master push costs about an hour of runner time. Whether
-      # that is the right cadence for a bleeding-edge tag is an open team
-      # decision; per-push is deliberately unchanged here, because any
-      # alternative changes a published artifact contract. The options and
-      # their tradeoffs are in docs/site/development/release-process.md.
+      # Never `cloud` on the automatic trigger: this runs on every push to
+      # master and the Build Cloud minutes are an org-wide shared pot. Dispatch
+      # with builder=cloud when a mainline image is needed in a hurry.
       builder: ${{ inputs.builder || 'emulated' }}
       version: ${{ github.sha }}
       ironbank_project_id: 19019

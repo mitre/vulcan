@@ -1,17 +1,9 @@
 name: Docker publish
 
-# Single implementation of "build the multi-arch image, push it to DockerHub,
-# and open the matching Iron Bank merge request on repo1".
-#
-# Two callers use it, and they differ only in what they tag and which repo1
-# project they file against:
-#
-#   release.yml   stable    tags <x.y.z> + release-latest   repo1 .../vulcan
-#   mainline.yml  bleeding  tags <git sha> + latest         repo1 .../vulcan-mainline
-#
-# Keeping one copy is not cosmetic: these two workflows were duplicated
-# line-for-line, and a build-driver regression that broke every release sat
-# unnoticed for three releases because the duplicate kept "working" (slowly).
+# Builds the multi-arch image, pushes it to DockerHub, and opens the matching
+# Iron Bank merge request. Called by release.yml (stable) and mainline.yml
+# (bleeding edge), which differ only in what they tag and which repo1 project
+# they file against.
 
 on:
   workflow_call:
@@ -91,11 +83,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    # Derived from the builder, never supplied by the caller, so the budget
-    # cannot disagree with the path. "Slow driver selected, fast driver's
-    # budget applied" is precisely how 2.4.0, 2.4.1 and 2.4.2 were cancelled.
-    #   cloud     25 = ~2.5x the slowest cloud release on record (10m26s, v2.3.6)
-    #   emulated 120 = ~1.9x the slowest observed emulated build (64m10s)
+    # Derived from the builder rather than taken from the caller, so a slow
+    # driver can never run under a fast driver's budget. Both are ~2x the
+    # slowest build observed on that driver (cloud 10m26s, emulated 64m10s).
     timeout-minutes: ${{ inputs.builder == 'cloud' && 25 || 120 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,10 +98,8 @@ jobs:
           username: ${{ vars.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      # Validate and announce the driver before anything depends on it. The
-      # original defect was invisible: the workflow quietly took a path nobody
-      # had chosen, under a budget sized for the path it did not take. A
-      # typo'd builder must fail here, and the choice must appear in the run.
+      # Fail on an unknown driver, and record the chosen one, so the path
+      # taken is never silent.
       - name: Resolve the build driver
         shell: bash
         env:
@@ -137,19 +125,10 @@ jobs:
             echo "$summary"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Docker Build Cloud: opt-in, never the default. Each architecture builds
-      # on a native machine and the builder keeps its own persistent layer
-      # cache, so a cold build measures 2m35s (run 33083040270) against ~63
-      # minutes emulated. The minutes come from one small monthly pot shared
-      # across the whole organisation, so this path is requested deliberately -
-      # by a repository variable before publishing, or by re-dispatching.
-      #
-      # If Build Cloud is unavailable or the pot is exhausted, this step fails
-      # in under a minute. It does not degrade to the emulated path, because
-      # this job is then budgeted at 25 minutes and an emulated build needs
-      # ~63: a slow driver running under a fast driver's budget is exactly how
-      # 2.4.0, 2.4.1 and 2.4.2 were cancelled. Re-run without the opt-in and
-      # the default emulated path applies, with its own 120-minute budget.
+      # Opt-in only: each architecture builds on a native machine (~3 min vs
+      # ~63 emulated) but spends the org's shared monthly minutes. Fails fast
+      # rather than falling back, because the 25-minute budget above is already
+      # committed by the time this runs.
       - name: Set up Docker Buildx (Docker Build Cloud)
         if: inputs.builder == 'cloud'
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
@@ -157,12 +136,8 @@ jobs:
           driver: cloud
           endpoint: ${{ vars.DOCKER_BUILD_CLOUD_ENDPOINT || 'mitre/mitre-builder' }}
 
-      # The default path. Free for public repositories, and proven: five
-      # consecutive mainline builds of this target completed in 62m13s-64m10s
-      # and each pushed a working amd64+arm64 image. It is slow because the
-      # image compiles Ruby, jemalloc and YJIT from source and both platform
-      # legs share one 4-vCPU runner - a budgeting problem, not a correctness
-      # problem, and the budget above is sized for it.
+      # The default: free, and ~63 minutes because the image compiles Ruby,
+      # jemalloc and YJIT from source for both architectures on one runner.
       - name: Set up QEMU (emulated multi-arch)
         if: inputs.builder == 'emulated'
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -188,10 +163,8 @@ jobs:
           artifact-name: image.spdx.json
           dependency-snapshot: true
 
-      # ─── IRON BANK ───
-      # Vulcan on Iron Bank ships both an arm64 and an amd64 image, so the
-      # hardening manifest needs the per-architecture digests of the manifest
-      # list we just pushed, not the list digest.
+      # Iron Bank's hardening manifest needs the per-architecture digests, not
+      # the manifest list digest.
       - name: Resolve per-architecture image digests for the Iron Bank manifest
         id: digests
         shell: bash
@@ -199,9 +172,7 @@ jobs:
           TAG: mitre/vulcan:${{ inputs.version }}
         run: |
           set -euo pipefail
-          # DockerHub's registry read path can lag the push by a few seconds, so
-          # a single inspect occasionally sees no manifest and the whole publish
-          # fails after the image is already live. Retry before giving up.
+          # DockerHub's read path can lag the push by a few seconds.
           for arch in amd64 arm64; do
             digest=""
             for attempt in 1 2 3 4 5; do
@@ -231,10 +202,8 @@ jobs:
           ironbank_project_clone_url: ${{ inputs.ironbank_clone_url }}
           git_commit_author_name: ${{ inputs.ironbank_commit_author_name }}
           git_commit_author_email: "saf@mitre.org"
-          # Each `sed` is paired with a `grep -qxF` assertion on the value it was
-          # supposed to write. `sed` exits 0 when its pattern matches nothing, so
-          # without the assertion a missing or reshaped `ARG VULCAN_VERSION=` line in
-          # repo1 would silently leave a stale version argument in the built image.
+          # `sed` exits 0 when it matches nothing, so each one is paired with a
+          # `grep -qxF` assertion that the value was actually written.
           update_commands: |
             yq e -i '.tags[0]=\"${{ inputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ inputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ inputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ inputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
             sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ inputs.version }}/' Dockerfile

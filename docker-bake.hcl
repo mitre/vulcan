@@ -108,29 +108,10 @@ target "production-multiarch" {
 //   mainline: TAG_SUFFIXES="<git sha>,latest"
 // The first suffix is the immutable version and is surfaced as the image label.
 //
-// NOTE: no cache-from / cache-to here, on purpose.
-//
-// The emulated driver is the default everywhere, and those builds run 62-64
-// minutes, so a `type=gha` cache genuinely would help. It is still the wrong
-// trade here:
-//
-//   `gh api repos/mitre/vulcan/actions/cache/usage` reports 9.57 GB live
-//   across 84 caches against GitHub's 10 GB per-repository ceiling. A
-//   mode=max export of a two-architecture UBI9 image that compiles Ruby and
-//   jemalloc from source runs to several GB, so writing image layers there
-//   would evict ci.yml's gem and Yarn caches by LRU on *every* push to master
-//   - buying mainline latency we do not need at the price of slower CI on
-//   every pull request.
-//
-// On the opt-in Build Cloud driver the question does not arise: that builder
-// keeps its own persistent per-architecture cache and a cold build of this
-// target measured 2m35s, leaving no build time for a cache to recover.
-//
-// `cache-from` without a writer is a no-op, so it is not configured either.
-// The `ci` target below keeps `type=gha` because it is single-architecture and
-// small. Revisit this if ci.yml's cache footprint shrinks enough to leave
-// room, or if the build moves to native per-architecture runners (which would
-// cut the build without needing a cache at all).
+// No cache-from / cache-to, unlike the `ci` target below: a mode=max export of
+// this two-architecture image runs to several GB, and the repo already sits at
+// 9.57 GB of GitHub's 10 GB cache ceiling, so it would evict ci.yml's gem and
+// yarn caches on every push. Revisit if that footprint shrinks.
 
 target "registry" {
   inherits = ["production-multiarch"]

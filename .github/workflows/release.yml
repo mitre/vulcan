@@ -1,41 +1,25 @@
 name: Release
 
-# Publishes the stable image for a GitHub Release: mitre/vulcan:<x.y.z> and
-# mitre/vulcan:release-latest, plus the Iron Bank merge request on repo1.
+# Publishes mitre/vulcan:<x.y.z> and :release-latest, plus the Iron Bank
+# merge request. See docs/site/development/release-process.md.
 #
-# Trigger: publishing a GitHub Release in the UI (see
-# docs/site/development/release-process.md). There is deliberately no
-# workflow_dispatch path. If a publish fails, re-run the failed run from the
-# Actions UI: GitHub replays the original `release` payload, so the tag is
-# still resolved the same way, and `vars.RELEASE_BUILDER` is read at run time
-# so the driver can be changed before re-running. A dispatch input would add a
-# second way to name the tag and a second way to pick the driver, both of
-# which can disagree with the release being published.
+# No workflow_dispatch on purpose: re-run the failed run instead, which
+# replays the release payload rather than taking the tag from a second source.
 
 on:
   release:
     types: [published]
 
-# Two publishes of the same tag must not race each other for `release-latest`.
-# Serialise per tag, and never cancel a publish in flight — a half-pushed
-# manifest list is worse than a slow one.
+# Serialise per tag so two publishes cannot race for `release-latest`, and
+# never cancel one in flight — a half-pushed manifest list is worse than none.
 concurrency:
   group: release-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
-  # Two checks the `release: published` trigger cannot express by itself.
-  #
-  # Branch protection already guarantees the code is good: `ci-gate` is a
-  # required check and `strict` is on, so a PR must be rebased onto current
-  # master AND green to merge. This job therefore does NOT re-check CI -- that
-  # would re-prove branch protection's work, and when an admin deliberately
-  # merges something red it would second-guess a decision made on purpose.
-  #
-  # What protection cannot cover is the tag: the Releases UI lets a human
-  # target any branch or commit, so "this release is cut from master" and
-  # "the version bump landed before the tag" are properties of the publish,
-  # not of the merge. Those are checked here, and cost seconds.
+  # The Releases UI can target any branch or commit, so master-ness and the
+  # version bump are checked here. CI is not re-checked: branch protection
+  # already requires a green, up-to-date PR to merge.
   verify:
     name: Verify the tag is releasable
     runs-on: ubuntu-24.04
@@ -47,8 +31,8 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       sha: ${{ steps.resolve.outputs.sha }}
     steps:
-      # DockerHub tags carry no `v` prefix (mitre/vulcan:2.4.1, not :v2.4.1),
-      # so the version is the tag with the prefix stripped.
+      # DockerHub tags carry no `v` prefix, so the image version is the tag
+      # with the prefix stripped.
       - name: Resolve the tag, its commit, and the unprefixed image version
         id: resolve
         shell: bash
@@ -78,9 +62,8 @@ jobs:
           ref: ${{ steps.resolve.outputs.sha }}
           fetch-depth: 0
 
-      # The version bump must land before the tag. If the tag points at a
-      # commit whose VERSION file says something else, the image would be
-      # pushed under a tag that disagrees with Vulcan::VERSION inside it.
+      # Otherwise the image ships under a tag that disagrees with the
+      # Vulcan::VERSION inside it.
       - name: VERSION at the tagged commit must equal the tag
         shell: bash
         env:
@@ -114,22 +97,13 @@ jobs:
       packages: write
     uses: ./.github/workflows/docker-publish.yml
     with:
-      # The verified commit, not github.ref: github.ref on a release event is
-      # the tag, but resolving it once in `verify` keeps the built tree and the
-      # checked tree provably the same commit.
+      # Resolved once above, so the built tree is the tree that was checked.
       ref: ${{ needs.verify.outputs.sha }}
       tag_suffixes: "${{ needs.verify.outputs.version }},release-latest"
       version: ${{ needs.verify.outputs.version }}
-      # `vars.RELEASE_BUILDER` is a repository variable, which is readable on
-      # the `release: published` trigger. It is the only way to ask for the
-      # fast driver on a real release: set it to `cloud` before clicking
-      # Publish, and unset it afterwards. 2.4.1 could only be rescued by hand
-      # because the old opt-in read `github.event.inputs`, which is empty here.
-      # Unset means the free emulated driver.
-      #
-      # The resolved value is printed and written to the run summary by the
-      # publish job, so the path taken is never invisible - which was the
-      # original defect, and would be just as bad with the polarity reversed.
+      # Set the RELEASE_BUILDER repository variable to `cloud` for a fast
+      # release, and unset it afterwards. A repository variable is used rather
+      # than an input because inputs are empty on this trigger.
       builder: ${{ vars.RELEASE_BUILDER || 'emulated' }}
       ironbank_project_id: 17073
       ironbank_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
