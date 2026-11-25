@@ -129,7 +129,13 @@ defaults: &defaults
     version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1').to_i %>
     title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use').to_json %>
     content: <%= (ENV['VULCAN_CONSENT_CONTENT'] || '').to_json %>
-    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0').to_i %>
+    # A duration for TimeoutParser (bare_unit: :seconds): plain seconds (3600)
+    # or a suffix (30m, 24h). Emitted with to_json (NOT to_i) so the raw
+    # suffix value reaches the parser — casting to Integer here strips it
+    # ("24h" -> 24 -> parsed as 24 SECONDS) and silently defeats the parser,
+    # re-prompting for consent every few seconds. Same pattern as
+    # session_timeout above. Default: 0, meaning acknowledgment never expires.
+    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0').to_json %>
   session_limits:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true')) != false %>
     max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>

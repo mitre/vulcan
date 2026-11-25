@@ -202,7 +202,6 @@ RSpec.describe 'Settings defaults' do
   describe 'numeric settings are Integer, not String' do
     {
       'consent.version' => -> { Settings.consent.version },
-      'consent.ttl' => -> { Settings.consent.ttl },
       'password.min_length' => -> { Settings.password.min_length },
       'password.min_uppercase' => -> { Settings.password.min_uppercase },
       'password.min_lowercase' => -> { Settings.password.min_lowercase },
@@ -222,6 +221,26 @@ RSpec.describe 'Settings defaults' do
         expect(value).to be_a(Integer),
                          "Expected Settings.#{path} to be Integer, got #{value.class} (#{value.inspect})"
       end
+    end
+  end
+
+  # consent.ttl is a duration INPUT too, and deliberately NOT in the Integer
+  # list above: the template emits it raw (to_json) so a suffix survives to its
+  # consumer. It was previously cast with
+  # .to_i, which made "24h" mean 24 SECONDS. Do not add it back to the Integer
+  # list — see spec/controllers/consent_ttl_spec.rb for the behavioural guard.
+  #
+  # Note it resolves with TimeoutParser.parse(..., bare_unit: :seconds), not the
+  # default :magnitude mode the two settings below use: a bare 60 means 60
+  # seconds here and 60 minutes there. Hence the separate assertion.
+  describe 'consent.ttl is emitted as a raw duration, not Integer-cast' do
+    it 'is not Integer-cast by the template' do
+      expect(Settings.consent.ttl).not_to be_a(Integer),
+                                          'consent.ttl must be emitted with to_json so a unit suffix survives'
+    end
+
+    it 'defaults to the "never expires" sentinel when the env var is unset' do
+      expect(Settings.consent.ttl.to_s).to eq('0')
     end
   end
 

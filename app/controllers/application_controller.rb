@@ -42,7 +42,7 @@ class ApplicationController < ActionController::Base
     parsed = Time.zone.parse(acknowledged_at)
     return true unless parsed # nil from unparseable string → re-prompt
 
-    parsed + parse_duration(ttl) < Time.current
+    parsed + TimeoutParser.parse(ttl, bare_unit: :seconds, fallback: 0).seconds < Time.current
   rescue ArgumentError
     true # corrupted timestamp → re-prompt
   end
@@ -290,17 +290,6 @@ class ApplicationController < ActionController::Base
   # exactly one redirect. AC-12(02) requires the explicit logoff message.
   def after_sign_out_path_for(_resource_or_scope)
     new_user_session_path
-  end
-
-  # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
-  def parse_duration(value)
-    str = value.to_s.strip
-    case str
-    when /\A(\d+)h\z/i then ::Regexp.last_match(1).to_i.hours
-    when /\A(\d+)m\z/i then ::Regexp.last_match(1).to_i.minutes
-    when /\A(\d+)s?\z/ then ::Regexp.last_match(1).to_i.seconds
-    else 0.seconds
-    end
   end
 
   # Determine the slack channel(s) and user id to which the slack notification should be sent.

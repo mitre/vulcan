@@ -180,4 +180,75 @@ RSpec.describe TimeoutParser do
       end
     end
   end
+
+  # Requirement: bare numbers are ambiguous, so the CALLER declares what they
+  # mean. Two settings made incompatible promises to operators before this
+  # class existed — VULCAN_SESSION_TIMEOUT documented the magnitude heuristic,
+  # VULCAN_CONSENT_TTL documented plain seconds — and silently redefining
+  # either would change the meaning of values already deployed in the field.
+  # These modes exist so one parser can honour both without forking.
+  describe 'bare_unit: :seconds' do
+    it 'reads a bare number as seconds, not via the magnitude heuristic' do
+      expect(described_class.parse('60', bare_unit: :seconds)).to eq(60)
+    end
+
+    it 'differs from the default mode for the same input' do
+      expect(described_class.parse('60', bare_unit: :seconds))
+        .not_to eq(described_class.parse('60'))
+    end
+
+    it 'reads a single digit as seconds rather than hours' do
+      expect(described_class.parse('5', bare_unit: :seconds)).to eq(5)
+    end
+
+    it 'still honours an explicit hour suffix' do
+      expect(described_class.parse('24h', bare_unit: :seconds)).to eq(86_400)
+    end
+
+    it 'still honours an explicit minute suffix' do
+      expect(described_class.parse('30m', bare_unit: :seconds)).to eq(1800)
+    end
+
+    it 'still honours an explicit second suffix' do
+      expect(described_class.parse('45s', bare_unit: :seconds)).to eq(45)
+    end
+
+    it 'leaves a large bare number alone, as both modes agree there' do
+      expect(described_class.parse('3600', bare_unit: :seconds)).to eq(3600)
+    end
+  end
+
+  describe 'fallback:' do
+    # The safe direction differs per setting: a session timeout must never
+    # become infinite, so it falls back to an hour; a consent TTL falling back
+    # to 0 means "re-prompt every session", the stricter AC-8 posture.
+    it 'returns the given fallback for nil instead of the 1-hour default' do
+      expect(described_class.parse(nil, fallback: 0)).to eq(0)
+    end
+
+    it 'returns the given fallback for an empty string' do
+      expect(described_class.parse('', fallback: 0)).to eq(0)
+    end
+
+    it 'returns the given fallback for "0"' do
+      expect(described_class.parse('0', fallback: 0)).to eq(0)
+    end
+
+    it 'returns the given fallback for an unparseable value' do
+      expect(described_class.parse('later', fallback: 0)).to eq(0)
+    end
+
+    it 'still defaults to one hour when no fallback is given' do
+      expect(described_class.parse(nil)).to eq(3600)
+    end
+  end
+
+  describe 'an unknown bare_unit' do
+    # Fail loudly rather than silently picking a mode: a typo'd mode would
+    # otherwise reinterpret every bare value the caller passes.
+    it 'raises ArgumentError' do
+      expect { described_class.parse('60', bare_unit: :minutes) }
+        .to raise_error(ArgumentError, /unknown bare_unit/)
+    end
+  end
 end
