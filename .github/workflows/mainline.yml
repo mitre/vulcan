@@ -49,14 +49,11 @@ jobs:
       # can still dispatch with builder=cloud when a mainline image is needed
       # in a hurry.
       #
-      # OPEN QUESTION for the maintainers: an hour of runner time per master
-      # push is a lot for a bleeding-edge tag. Moving this to a daily
-      # `schedule:` (plus this manual dispatch) would cut it by roughly 90%
-      # and keep both the multi-arch `latest` image and the repo1 mainline
-      # feed intact, at the cost of `<git-sha>` images existing only for the
-      # commits that happen to be HEAD when it runs. That changes a published
-      # artifact contract, so it is left as a deliberate decision rather than
-      # folded into a release fix. See docs/site/development/release-process.md.
+      # Building every master push costs about an hour of runner time. Whether
+      # that is the right cadence for a bleeding-edge tag is an open team
+      # decision; per-push is deliberately unchanged here, because any
+      # alternative changes a published artifact contract. The options and
+      # their tradeoffs are in docs/site/development/release-process.md.
       builder: ${{ inputs.builder || 'emulated' }}
       version: ${{ github.sha }}
       ironbank_project_id: 19019

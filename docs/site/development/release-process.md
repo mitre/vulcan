@@ -270,11 +270,13 @@ The git tag is `v2.5.0`; the image tag is `2.5.0`. `release.yml` strips the pref
 ::: tip Open question: how often should `master` be built?
 `mainline.yml` builds a full two-architecture image on **every** push to `master`, which is about an hour of runner time each (free, but not nothing — it occupies an organization concurrency slot, and superseded pushes are cancelled rather than queued). For a bleeding-edge tag that is arguably more than it needs.
 
-The recommended change is to move `mainline.yml` from `push:` to a **daily `schedule:`** plus its existing manual dispatch. That cuts the cost by roughly 90% and keeps both the multi-architecture `latest` image and the repo1 mainline feed exactly as they are. The cost is that `mitre/vulcan:<git-sha>` images would exist only for the commits that happen to be `HEAD` when the schedule fires, rather than for every commit.
+**The current per-push cadence stands.** The options below are recorded as input to that discussion, not as pending work.
+
+One option is to move `mainline.yml` from `push:` to a **daily `schedule:`** plus its existing manual dispatch. That would cut the cost by roughly 90% and keep both the multi-architecture `latest` image and the repo1 mainline feed exactly as they are. The tradeoff is that `mitre/vulcan:<git-sha>` images would exist only for the commits that happen to be `HEAD` when the schedule fires, rather than for every commit — so anything that pins a specific `<git-sha>` image would no longer be able to.
 
 Two alternatives were considered and are **not** recommended: building `master` as amd64-only would drop `latest` to a single architecture (breaking it for Apple Silicon developers) and would break the repo1 mainline hardening manifest, which requires both per-architecture digests. Native per-architecture runners (`ubuntu-24.04-arm` plus a manifest merge) would remove the emulation cost entirely and are free for public repositories, but are unvalidated here and no longer urgent now that the emulated path is correctly budgeted.
 
-This changes a published artifact contract, so it is left as a deliberate maintainer decision rather than folded into a release fix.
+Any of these changes a published artifact contract, so the cadence is a team decision and is deliberately not folded into a release fix.
 :::
 
 ## Troubleshooting
